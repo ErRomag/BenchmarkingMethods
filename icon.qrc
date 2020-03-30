@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/Icon"/>
+    <qresource prefix="/Icons"/>
+    <qresource prefix="/">
+        <file>Icon/IconHAMGrad.png</file>
+        <file>Icon/IconInfoDGrad.png</file>
+        <file>Icon/IconMainWindowGrad.png</file>
+        <file>Icon/IconWCMGrad.png</file>
+        <file>Icon/IconPriorityTechGrad.png</file>
+    </qresource>
+</RCC>

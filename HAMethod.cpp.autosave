@@ -1,0 +1,128 @@
+#include "HAMethod.h"
+#include "ui_HAMethod.h"
+
+#include <QFile>
+#include <QTextStream>
+#include <QDebug>
+#include <QString>
+
+HAMethod::HAMethod(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::HAMethod)
+{
+    ui->setupUi(this);
+    setWindowTitle("Hierarchy Analysis Method");
+
+    QPixmap pixmapHAMWindow(":/Icon/IconHAMGrad.png");
+    QIcon HAMWindowIcon(pixmapHAMWindow);
+    setWindowIcon(HAMWindowIcon);
+
+    // Описание MenuBar
+
+    openMainWindowAction = new QAction("&Choose method", this);
+    connect(openMainWindowAction, SIGNAL(triggered()), this, SLOT(onOpenMainWindowClicked()));
+    exitAction = new QAction("&Exit", this);
+    connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
+
+    fileMenu = this->menuBar()->addMenu("&File");
+
+    fileMenu->addAction(openMainWindowAction);
+    fileMenu->addSeparator();
+    fileMenu->addAction(exitAction);
+
+    ui->tableWidget->setRowCount(6);
+    ui->tableWidget->setColumnCount(5);
+    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "a" << "b" << "c" << "d" << "e");
+
+    int count = 1;
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
+    {
+        for (int j = 0; j < ui->tableWidget->columnCount(); j++)
+        {
+            QTableWidgetItem *item = new QTableWidgetItem(QString::number(count*count));
+            ui->tableWidget->setItem(i, j, item);
+            count++;
+        }
+    }
+}
+
+HAMethod::~HAMethod()
+{
+    delete ui;
+}
+
+void HAMethod::onOpenMainWindowClicked()
+{
+    this->close();
+    emit openMainWindow();
+}
+
+void HAMethod::on_pushButton_clicked()
+{
+    QString path = "Table2.csv";
+    saveAsCSV(path);
+
+    // Передача значения из таблицы в переменную
+    qint32 val1;
+    qint32 m, n;
+    m = 5;
+    n = 5;
+
+    qint32 **mtrx = new qint32*[ui->tableWidget->rowCount()];  // выделение памяти под столбцы матрицу
+
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
+    {
+        mtrx[i] = new int [n]; // выделение памяти под строки матрицы
+
+        for (int j = 0; j < ui->tableWidget->columnCount(); j++)
+        {
+            //QTableWidgetItem *itemVal1 = ui->tableWidget->item(i, j);
+            mtrx[i][j] = ui->tableWidget->item(i, j)->text().toFloat();
+            qDebug() << mtrx[i][j];
+        }
+    }
+
+
+    //    QTableWidgetItem *itemVal1 = ui->tableWidget->item(2, 2);
+    //    if (NULL != itemVal1) {
+    //        val1 = itemVal1->text().toInt();
+
+}
+/*
+QString check;
+QTableWidgetItem *item = ui->tableWidget->item(i,j);
+if (NULL != item) {
+   check = item->text();
+}
+*/
+
+
+void HAMethod::saveAsCSV(QString filename)
+{
+    QFile tableFile(filename);
+
+    if( tableFile.open( QIODevice::WriteOnly ) )
+    {
+        QTextStream ts( &tableFile );
+        QStringList strList;
+
+        strList << "\" \"";
+        for( int c = 0; c < ui->tableWidget->horizontalHeader()->count(); ++c )
+            strList << "\""+ui->tableWidget->model()->headerData(c, Qt::Horizontal).toString()+"\"";
+        ts << strList.join( ";" )+"\n";
+
+        for( int r = 0; r < ui->tableWidget->verticalHeader()->count(); ++r )
+        {
+            strList.clear();
+            strList << "\""+ui->tableWidget->model()->headerData(r, Qt::Vertical).toString()+"\"";
+            for( int c = 0; c < ui->tableWidget->horizontalHeader()->count(); ++c )
+            {
+                strList << "\""+ui->tableWidget->model()->data(ui->tableWidget->model()->index(r, c), Qt::DisplayRole).toString()+"\"";
+            }
+            ts << strList.join( ";" )+"\n";
+
+        }
+        tableFile.close();
+    }
+}
+
