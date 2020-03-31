@@ -80,10 +80,72 @@ void MethodsHAWC::on_CalculationPushButton_clicked()
     {
         HeeSquareValueColumn =  ui->PforHeeSquareLineEdit->text().toInt();  // Номер столбца для рассчетов Хи^2
 
+        allAverageVector.clear();
 
+        for (qint32 _table = 0; _table < vectorWithVectorExperts.size(); _table++)
+        {
+            qint32 counterColumn = 2;
+            float averageCurrentSumm = 0.0;  // Сумма средних арифметических для текущей таблицы
+            QVector<float> averageForCurrentTable;  // Хранит средние арифметические для текущей таблицы
 
-        qDebug() << vectorWithVectorValue;
-        qDebug() << vectorWithVectorExperts;
+            averageForCurrentTable = checkOpinionAndGetAverageVector(vectorWithVectorExperts.at(_table), HeeSquareValueColumn, _table);
+            averageCurrentSumm = getVectorSumm(averageForCurrentTable);
+            allAverageVector.push_back(averageCurrentSumm);  // Запоминаем сумму средних арифметических для рассчетов
+
+            while (counterColumn <= vectorWithVectorExperts.at(_table).at(0).size()) // Идем по столбцам
+            {
+                float kpi = 0.0;  // Значение Кпi для текущего образца
+
+                for (qint32 _row = 0; _row < vectorWithVectorExperts.at(_table).size(); _row++)  // Идем по строкам в столбце
+                {
+
+                    if (vectorWithVectorValue.at(_table).at(_row).at(0) == 1)
+                    {
+                        kpi += (vectorWithVectorValue.at(_table).at(_row).at(counterColumn) / vectorWithVectorValue.at(_table).at(_row).at(1) )
+                                * averageForCurrentTable.at(_row);
+
+                    } else if (vectorWithVectorValue.at(_table).at(_row).at(0) == -1)
+                    {
+                        kpi += (vectorWithVectorValue.at(_table).at(_row).at(1) / vectorWithVectorValue.at(_table).at(_row).at(counterColumn) )
+                                * averageForCurrentTable.at(_row);
+
+                    } else
+                    {
+                        // Вывод сообщения о том, что неправильно указано направление влияния ТУ
+                        QMessageBox::warning(this, "Error", "In table " + QString::number(_table) +
+                                             "\n incorrect direction of influence " +
+                                             "\n of the technical level coefficient.");
+                    }
+                }
+                kpiFiRowVector.push_back(kpi);
+                counterColumn++;
+            }
+            kpiFiTableVector.push_back(kpiFiRowVector);
+            kpiFiRowVector.clear();
+        }
+
+        qDebug() << "kpiFiTableVector = " << kpiFiTableVector;
+        qDebug() <<"allAverageVector = " << allAverageVector;
+
+        qint32 currentColumn = 0;
+        float resultAverageSumm = getVectorSumm(allAverageVector);  // Общая сумма средних арифметических по всем таблицам
+
+        // Находим сумму по всем альтенитивам по каждой таблице
+        while (currentColumn < kpiFiTableVector.at(0).size())
+        {
+            float currentKtu = 0.0;  // Текущее значение Kту
+            float currentKpiFiSumm = 0.0;
+
+            for (qint32 _row = 0; _row < kpiFiTableVector.size(); _row++)
+            {
+                currentKpiFiSumm += kpiFiTableVector.at(_row).at(currentColumn);
+            }
+            currentKtu = currentKpiFiSumm / resultAverageSumm;
+            ktuVector.push_back(currentKtu);
+            currentColumn++;
+        }
+
+        qDebug() << "ktuVector = " << ktuVector;
     }
 }
 
@@ -167,19 +229,25 @@ void MethodsHAWC::on_CreateTablesPushButton_clicked()
     NumberExperts = ui->NumberExpertsLineEdit->text().toInt();
     NumberAlternative = ui->NumberAlternativeLineEdit->text().toInt();
 
-    // Создаение таблицы для мнений экспертов по ИП
-    QTableWidget *integralIndexTableWidgetExperts = new QTableWidget();
-    integralIndexTableWidgetExperts->setRowCount(NumberIntegralIndex);
-    integralIndexTableWidgetExperts->setColumnCount(NumberExperts);
-    ui->ExpertsVerticalLayout->addWidget(integralIndexTableWidgetExperts);
-    tableWidgetExpertVector.push_back(integralIndexTableWidgetExperts);
+    tableWidgetValueVector.clear();
+    tableWidgetExpertVector.clear();
+
+    if (ui->HAMRadioButton->isChecked())
+    {
+        // Создаение таблицы для мнений экспертов по ИП
+        QTableWidget *integralIndexTableWidgetExperts = new QTableWidget();
+        integralIndexTableWidgetExperts->setRowCount(NumberIntegralIndex);
+        integralIndexTableWidgetExperts->setColumnCount(NumberExperts);
+        ui->ExpertsVerticalLayout->addWidget(integralIndexTableWidgetExperts);
+        tableWidgetExpertVector.push_back(integralIndexTableWidgetExperts);
+    }
 
     for (qint32 i = 0; i < NumberIntegralIndex; i++)
     {
         // Создание таблиц числовых значений
         QTableWidget *tableWidgetValue = new QTableWidget();
         tableWidgetValue->setRowCount(NumberUnitsIndexVector.at(i));
-        tableWidgetValue->setColumnCount(NumberAlternative);
+        tableWidgetValue->setColumnCount(NumberAlternative + 1);  // + 1 столбец нужен для записи направления роста ТУ (1 - повышение, 0 - понижение)
         tableWidgetValue->resize(100, 100);
         ui->layout->addWidget(tableWidgetValue);
         tableWidgetValueVector.push_back(tableWidgetValue);
@@ -193,8 +261,8 @@ void MethodsHAWC::on_CreateTablesPushButton_clicked()
         tableWidgetExpertVector.push_back(tableWidgetExperts);
     }
 
-    qDebug() << tableWidgetValueVector;
-    qDebug() << tableWidgetExpertVector;
+//    qDebug() << tableWidgetValueVector;
+//    qDebug() << tableWidgetExpertVector;
 }
 
 QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_tableWidget)
@@ -209,7 +277,8 @@ QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_t
 
     for (qint32 i = 0; i < numberIndex; i++)
     {
-        for (qint32 j = 0; j < numberExperts; j++) {
+        for (qint32 j = 0; j < numberExperts; j++)
+        {
             vectorRows.push_back(_tableWidget->item(i, j)->text().toFloat());
         }
         vectorFromTableWidget.push_back(vectorRows);
@@ -219,7 +288,7 @@ QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_t
     return  vectorFromTableWidget;
 }
 
-QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber)
+QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber, qint32 _tableNumber)
 {
     qint32 numberIndex;             // Кол-во показателей
     qint32 numberExperts;           // Кол-во экспертов
@@ -234,6 +303,10 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
     float omega = 0.0;                        // Коэффициент конкордации
     float actualValueHeeSquare = 0.0;         // Фактическое значение Хи^2
     float theoreticalValueHeeSquare = getHeeSquareTableValue(numberIndex, _columnNumber);  // Брем из таблицы
+
+    averageVector.clear();
+    SCOVector.clear();
+    VVector.clear();
 
     /* Если количество показателей = 1, то в формуле Хи^2 будет деление на 0,
      * что недопустимо, поэтому считаем, что коэффициенты равны 0
@@ -296,6 +369,10 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
         qint32 currentEccourededNumber = 0;  // Количество текущих повторений
         int currentNumberSearch = 10;        // текущий номер, который ищем
 
+        SearchNumberVector.clear();
+        currentVector.clear();
+        eccourededNumber.clear();
+
         for (int i = 0; i < numberIndex; i++)
         {
             currentNumberSearch = 10;
@@ -329,6 +406,9 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
         qint32 currentPositionInRealNumberPool = 0;  // Текущая позиция счетчика в пуле целых чисел
         float summS = 0.0;                           // Сумма соответсвующего столбца li
         float S = 0.0;                               // Сумма
+
+        vectorS.clear();
+        realNumberPool.clear();
 
         for (int i = 0; i < numberExperts; i++)  // Заполнение пула
         {
@@ -404,7 +484,8 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
     if (omega > 0 && (actualValueHeeSquare >= theoreticalValueHeeSquare ))
     {
         // Если мнения согласованы
-        QMessageBox::information(this, "Information", "Expert opinions agreed.");
+        QMessageBox::information(this, "Information", "In table " + QString::number(_tableNumber + 1)
+                                 + " expert opinions agreed.");
         return  averageVector;
 
     } else {
@@ -416,19 +497,23 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
                                           * больше среднего арифметического и их надо скорректировать
                                           */
 
-        for (qint32 i = 0; i < numberIndex; i ++)
+        stringWithPosition = "";
+
+        for (qint32 i = 0; i < VVector.size(); i++)
         {
             averageSummVVector += VVector.at(i);
         }
         averageSummVVector /= numberIndex;
 
-        for (qint32 i = 0; i < numberIndex; i++)  // Находим показатели, которые надо скорректировать
+        for (qint32 i = 0; i < VVector.size(); i++)  // Находим показатели, которые надо скорректировать
         {
             if (VVector.at(i) >= averageSummVVector) stringWithPosition += QString::number(i + 1) + " ";
         }
 
-        QMessageBox::information(this, "Error", "Expert opinions are not agreed. \n Please check this index: " + stringWithPosition );
-        VVector[0] = -42;  // Флаг, показывающий, что мнения не согласованы и дальнейшие расчеты не имеют смысла
+        QMessageBox::information(this, "Error", "Expert opinions are not agreed. \n Please check index " + stringWithPosition
+                                 + "\n in table " + QString::number(_tableNumber + 1));
+        VVector.push_back(-42);
+        // VVector[0] = -42;  // Флаг, показывающий, что мнения не согласованы и дальнейшие расчеты не имеют смысла
         return VVector;
     }
 }
@@ -445,6 +530,9 @@ float MethodsHAWC::getHeeSquareTableValue(int n, int p)
 
 void MethodsHAWC::fillVectorsWithValuesFromTableWidget()
 {
+    vectorWithVectorValue.clear();
+    vectorWithVectorExperts.clear();
+
     for (qint32 i = 0; i < tableWidgetValueVector.size(); i++)
     {
         vectorWithVectorValue.push_back(getQVectorFromQTableWidget(tableWidgetValueVector.at(i)));
@@ -454,6 +542,18 @@ void MethodsHAWC::fillVectorsWithValuesFromTableWidget()
     {
         vectorWithVectorExperts.push_back(getQVectorFromQTableWidget(tableWidgetExpertVector.at(i)));
     }
+}
+
+float MethodsHAWC::getVectorSumm(QVector<float> _dataVector)
+{
+    float vectorSumm = 0.0;
+
+    for (qint32 i = 0; i < _dataVector.size(); i++)
+    {
+        vectorSumm += _dataVector.at(i);
+    }
+
+    return  vectorSumm;
 }
 
 void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)  // Сохранение таблицы в .SCV формат
@@ -493,7 +593,7 @@ void MethodsHAWC::on_TEST_BTN_clicked()
     testVector = getQVectorFromQTableWidget(ui->tableWidget);
 
     qDebug() << testVector;
-    testAverageVector =  checkOpinionAndGetAverageVector(testVector, 3);
+    testAverageVector =  checkOpinionAndGetAverageVector(testVector, 3, 2);
 }
 
 

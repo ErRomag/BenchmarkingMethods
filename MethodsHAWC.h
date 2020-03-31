@@ -18,15 +18,23 @@ public:
     explicit MethodsHAWC(QWidget *parent = nullptr);
     ~MethodsHAWC();
 
-    void saveAsCSV(QString filename, QTableWidget _tableWidget);  // Сохранение в .SCV формат
+    // Сохранение в .SCV формат
+    void saveAsCSV(QString filename, QTableWidget _tableWidget);
+
     // Получение вектора с данными из таблицы
     QVector< QVector<float> > getQVectorFromQTableWidget(QTableWidget *_tableWidget);
+
     // Вектор средних арифметических для МВК
-    QVector<float> checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber);
+    QVector<float> checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber, qint32 _tableNumber);
+
     // Получение значения Хи^2, где n - кол-во показателей, p - номер столбца, соответсвующий (1 - mu)
     float getHeeSquareTableValue(int n, int p);
+
     // Заполенение двух векторов векторами, полученными из таблиц, для дальнейших вычислений
     void fillVectorsWithValuesFromTableWidget();
+
+    // Посчет суммы чисел в векторе
+    float getVectorSumm(QVector<float> _dataVector);
 
 signals:
     void openMainWindow();
@@ -58,8 +66,13 @@ private:
     QVector<QTableWidget*> tableWidgetValueVector;   // Хранит созданные табллицы с числовыми харакетристиками
     QVector<QTableWidget*> tableWidgetExpertVector;  // Хранит созданные таблицы с оценками экспертов
 
-    QVector<QVector<QVector<float>>> vectorWithVectorValue;  // Хранит вектор из переведенных в веторы таблиц со значениями
+    QVector<QVector<QVector<float>>> vectorWithVectorValue;    // Хранит вектор из переведенных в веторы таблиц со значениями
     QVector<QVector<QVector<float>>> vectorWithVectorExperts;  // Хранит вектор из переведенных в векторы таблиц с оценками экспертов
+    QVector<float> allAverageVector;                           // Хранит сумму средних арифметических для каждой таблицы по каждому показателю
+
+    QVector<float> kpiFiRowVector;             // Строка со значениями Кпi
+    QVector<QVector<float>> kpiFiTableVector;  // Таблица со строками, хранящимим значения Кпi
+    QVector<float> ktuVector;                  // Содержит значния Кту для каждой альтерантивы
 
     // Таблица значений Хи^2
     float heeSquareTableMatrixNew [30][14]  = {
