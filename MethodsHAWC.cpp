@@ -78,74 +78,7 @@ void MethodsHAWC::on_CalculationPushButton_clicked()
     }
     else if (ui->WCMRadioButton->isChecked())  // Если МВК
     {
-        HeeSquareValueColumn =  ui->PforHeeSquareLineEdit->text().toInt();  // Номер столбца для рассчетов Хи^2
-
-        allAverageVector.clear();
-
-        for (qint32 _table = 0; _table < vectorWithVectorExperts.size(); _table++)
-        {
-            qint32 counterColumn = 2;
-            float averageCurrentSumm = 0.0;  // Сумма средних арифметических для текущей таблицы
-            QVector<float> averageForCurrentTable;  // Хранит средние арифметические для текущей таблицы
-
-            averageForCurrentTable = checkOpinionAndGetAverageVector(vectorWithVectorExperts.at(_table), HeeSquareValueColumn, _table);
-            averageCurrentSumm = getVectorSumm(averageForCurrentTable);
-            allAverageVector.push_back(averageCurrentSumm);  // Запоминаем сумму средних арифметических для рассчетов
-
-            while (counterColumn <= vectorWithVectorExperts.at(_table).at(0).size()) // Идем по столбцам
-            {
-                float kpi = 0.0;  // Значение Кпi для текущего образца
-
-                for (qint32 _row = 0; _row < vectorWithVectorExperts.at(_table).size(); _row++)  // Идем по строкам в столбце
-                {
-
-                    if (vectorWithVectorValue.at(_table).at(_row).at(0) == 1)
-                    {
-                        kpi += (vectorWithVectorValue.at(_table).at(_row).at(counterColumn) / vectorWithVectorValue.at(_table).at(_row).at(1) )
-                                * averageForCurrentTable.at(_row);
-
-                    } else if (vectorWithVectorValue.at(_table).at(_row).at(0) == -1)
-                    {
-                        kpi += (vectorWithVectorValue.at(_table).at(_row).at(1) / vectorWithVectorValue.at(_table).at(_row).at(counterColumn) )
-                                * averageForCurrentTable.at(_row);
-
-                    } else
-                    {
-                        // Вывод сообщения о том, что неправильно указано направление влияния ТУ
-                        QMessageBox::warning(this, "Error", "In table " + QString::number(_table) +
-                                             "\n incorrect direction of influence " +
-                                             "\n of the technical level coefficient.");
-                    }
-                }
-                kpiFiRowVector.push_back(kpi);
-                counterColumn++;
-            }
-            kpiFiTableVector.push_back(kpiFiRowVector);
-            kpiFiRowVector.clear();
-        }
-
-        qDebug() << "kpiFiTableVector = " << kpiFiTableVector;
-        qDebug() <<"allAverageVector = " << allAverageVector;
-
-        qint32 currentColumn = 0;
-        float resultAverageSumm = getVectorSumm(allAverageVector);  // Общая сумма средних арифметических по всем таблицам
-
-        // Находим сумму по всем альтенитивам по каждой таблице
-        while (currentColumn < kpiFiTableVector.at(0).size())
-        {
-            float currentKtu = 0.0;  // Текущее значение Kту
-            float currentKpiFiSumm = 0.0;
-
-            for (qint32 _row = 0; _row < kpiFiTableVector.size(); _row++)
-            {
-                currentKpiFiSumm += kpiFiTableVector.at(_row).at(currentColumn);
-            }
-            currentKtu = currentKpiFiSumm / resultAverageSumm;
-            ktuVector.push_back(currentKtu);
-            currentColumn++;
-        }
-
-        qDebug() << "ktuVector = " << ktuVector;
+        calculationUsingWeightCoefficientMethod();
     }
 }
 
@@ -261,8 +194,8 @@ void MethodsHAWC::on_CreateTablesPushButton_clicked()
         tableWidgetExpertVector.push_back(tableWidgetExperts);
     }
 
-//    qDebug() << tableWidgetValueVector;
-//    qDebug() << tableWidgetExpertVector;
+    //    qDebug() << tableWidgetValueVector;
+    //    qDebug() << tableWidgetExpertVector;
 }
 
 QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_tableWidget)
@@ -286,6 +219,108 @@ QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_t
     }
 
     return  vectorFromTableWidget;
+}
+
+void MethodsHAWC::calculationUsingWeightCoefficientMethod()
+{
+    QVector<float> kpiFiRowVector;                      // Строка со значениями Кпi
+    QVector<QVector<float>> kpiFiTableVector;           // Таблица со строками, хранящимим значения Кпi
+    QVector<float> ktuVector;                           // Содержит значния Кту для каждой альтерантивы
+    QVector<float> allAverageVector;                    // Хранит сумму средних арифметических для каждой таблицы по каждому показателю
+    qint32 HeeSquareValueColumn;                        // Номер столбца в таблице Хи^2
+    QVector<QPair<float, QString>> vectorWithKtuAnalyz; // Вектор, хранящий значения Кту и анализ перспективности
+
+    allAverageVector.clear();
+    ktuVector.clear();
+    vectorWithKtuAnalyz.clear();
+
+    HeeSquareValueColumn =  ui->PforHeeSquareLineEdit->text().toInt();  // Номер столбца для рассчетов Хи^2
+
+    for (qint32 _table = 0; _table < vectorWithVectorValue.size(); _table++)
+    {
+        qint32 counterColumn = 2;
+        float averageCurrentSumm = 0.0;  // Сумма средних арифметических для текущей таблицы
+        QVector<float> averageForCurrentTable;  // Хранит средние арифметические для текущей таблицы
+
+        averageForCurrentTable = checkOpinionAndGetAverageVector(vectorWithVectorExperts.at(_table), HeeSquareValueColumn, _table);
+        averageCurrentSumm = getVectorSumm(averageForCurrentTable);
+        allAverageVector.push_back(averageCurrentSumm);  // Запоминаем сумму средних арифметических для рассчетов
+
+        while (counterColumn < vectorWithVectorValue.at(_table).at(0).size()) // Идем по столбцам
+        {
+            float kpi = 0.0;  // Значение Кпi для текущего образца
+
+            for (qint32 _row = 0; _row < vectorWithVectorValue.at(_table).size(); _row++)  // Идем по строкам в столбце
+            {
+
+                if (vectorWithVectorValue.at(_table).at(_row).at(0) == 1)
+                {
+                    kpi += (vectorWithVectorValue.at(_table).at(_row).at(counterColumn) / vectorWithVectorValue.at(_table).at(_row).at(1) )
+                            * averageForCurrentTable.at(_row);
+
+                } else if (vectorWithVectorValue.at(_table).at(_row).at(0) == -1)
+                {
+                    kpi += (vectorWithVectorValue.at(_table).at(_row).at(1) / vectorWithVectorValue.at(_table).at(_row).at(counterColumn) )
+                            * averageForCurrentTable.at(_row);
+
+                } else
+                {
+                    // Вывод сообщения о том, что неправильно указано направление влияния ТУ
+                    QMessageBox::warning(this, "Error", "In table " + QString::number(_table) +
+                                         "\n incorrect direction of influence " +
+                                         "\n of the technical level coefficient.");
+                }
+            }
+            kpiFiRowVector.push_back(kpi);
+            counterColumn++;
+        }
+        kpiFiTableVector.push_back(kpiFiRowVector);
+        kpiFiRowVector.clear();
+    }
+
+    qint32 currentColumn = 0;
+    float resultAverageSumm = getVectorSumm(allAverageVector);  // Общая сумма средних арифметических по всем таблицам
+
+    // Находим сумму по всем альтенитивам по каждой таблице
+    while (currentColumn < kpiFiTableVector.at(0).size())
+    {
+        float currentKtu = 0.0;  // Текущее значение Kту
+        float currentKpiFiSumm = 0.0;
+
+        for (qint32 _row = 0; _row < kpiFiTableVector.size(); _row++)
+        {
+            currentKpiFiSumm += kpiFiTableVector.at(_row).at(currentColumn);
+        }
+        currentKtu = currentKpiFiSumm / resultAverageSumm;  // Делим на сумму средних арифметически
+        ktuVector.push_back(currentKtu);
+        currentColumn++;
+    }
+
+    // Формируем пары значение Кту и вывод о его перспективности
+    for (qint32 i = 0; i < ktuVector.size(); i++)
+    {
+        QPair<float, QString> ktuWithAnalys;
+        ktuWithAnalys.first = ktuVector.at(i);
+        ktuWithAnalys.second = assessProspects(ktuVector.at(i));
+        vectorWithKtuAnalyz.push_back(ktuWithAnalys);
+    }
+
+    // Найти среди них максимальный элемент и покрасить его в зеленый или как нибудь еще обозначить
+
+    float maxNumberInKtuVector = ktuVector.at(0);
+
+    for (qint32 i = 0; i < ktuVector.size(); i++)
+    {
+        if (ktuVector.at(i) > maxNumberInKtuVector)
+        {
+            maxNumberInKtuVector = ktuVector.at(i);
+        }
+    }
+
+    // Вывод в таблицу итоговую на форме
+
+    qDebug() << "vectorWithKtuAnalyz = " << vectorWithKtuAnalyz;
+    qDebug() << "maxNumberInKtuVector = " << maxNumberInKtuVector;
 }
 
 QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber, qint32 _tableNumber)
@@ -554,6 +589,16 @@ float MethodsHAWC::getVectorSumm(QVector<float> _dataVector)
     }
 
     return  vectorSumm;
+}
+
+QString MethodsHAWC::assessProspects(float _ktu)
+{
+    QString prospectsResult;
+
+    if (_ktu < 1.065 )                 return prospectsResult = "Not promising.";
+    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unpromising.";
+    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Promising.";
+    if (_ktu > 1.27  )                 return prospectsResult = "Very promising.";
 }
 
 void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)  // Сохранение таблицы в .SCV формат
