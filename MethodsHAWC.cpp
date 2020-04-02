@@ -34,25 +34,6 @@ MethodsHAWC::MethodsHAWC(QWidget *parent) :
 
     NumberLineEdit = 0;
 
-
-    ui->tableWidget->setRowCount(3);  // Альтенативы
-    ui->tableWidget->setColumnCount(5);  // Эксеперты
-    ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "a" << "b" << "c" << "d" << "e");
-
-    // int count = 1;
-    //    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
-    //    {
-    //        for (int j = 0; j < ui->tableWidget->columnCount(); j++)
-    //        {
-    //            QTableWidgetItem *item = new QTableWidgetItem(QString::number(count*count));
-    //            ui->tableWidget->setItem(i, j, item);
-    //            count++;
-    //        }
-    //    }
-
-    //    ui->scrollArea->setWidgetResizable(false);
-    //    ui->scrollArea->setLayout(ui->layout);
-
 }
 
 MethodsHAWC::~MethodsHAWC()
@@ -82,144 +63,7 @@ void MethodsHAWC::on_CalculationPushButton_clicked()
     }
 }
 
-/* При нажатии на кнопку в Layout создаютя LineEdit для ввода количества единичных показателей,
- * соответствующие каждому интегральному показателю
- */
-void MethodsHAWC::on_CreateSingleIndexPushButton_clicked()
-{
-    NumberIntegralIndex = ui->NumberIntegralIndexLineEdit->text().toInt();
-
-    for (qint32 i = 0; i < NumberIntegralIndex; i++)
-    {
-        // QSharedPointer<QLineEdit> lineEdit(new QLineEdit());
-        QLineEdit *lineEdit = new QLineEdit();
-        lineEdit->setPlaceholderText(QString::number(NumberLineEdit + 1) + " Integral Index");
-        ui->IntegralIndexVerticalLayout->addWidget(lineEdit);
-        connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(slotGetNumberUnitsIndex()));  // Сигнал от LineEdit вызывается, когда с него снят фокус
-        NumberLineEdit++;
-    }
-
-
-    //    ui->IntegralIndexVerticalLayout->addWidget(lineEdit);  // Добавляем кнопку в слой с вертикальной компоновкой
-    //    lineEdit->setPlaceholderText(QString::number(NumberLineEdit + 1) + " Integral Index");
-    //    NumberLineEdit++;
-    //    connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(slotGetNumberUnitsIndex()));  // Сигнал от LineEdit вызывается, когда с него снят фокус
-
-    //ui->scrollArea->setWidgetResizable(true);
-
-    //    for (int k = 0; k < NumberIntegralIndex; k++)
-    //    {
-    //        // DynamicLineEdit *lineEdit = new DynamicLineEdit();  // Создаем объект динамической кнопки
-    //        QLineEdit *lineEdit = new QLineEdit();
-    //        QTableWidget *tableWidget = new QTableWidget;
-    //        QLabel *label = new QLabel;
-    //        QSharedPointer<QTableWidget> tableWidget1(new QTableWidget);
-
-
-    //        label->setText("Integral Index " + QString::number(NumberLineEdit));
-    //        tableWidget->setRowCount(6);
-    //        tableWidget->setColumnCount(5);
-    //        tableWidget->setHorizontalHeaderLabels(QStringList() << "a" << "b" << "c" << "d" << "e");
-    //        //tableWidget->setMinimumWidth(100);
-    //        //tableWidget->setMinimumHeight(100);
-    //        //ui->layout->addWidget(label);
-    //        //ui->layout->addWidget(tableWidget);
-    //        ui->layout->addWidget(tableWidget);
-
-    //        //tableWidget->resize(2000, 2000);
-
-    //        //        ui->scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    //        ui->scrollArea->setWidgetResizable(true);
-    //        //ui->scrollArea->setLayout(layout);
-
-    //        int count = 1;
-    //        for (int i = 0; i <tableWidget->rowCount(); i++)
-    //        {
-    //            for (int j = 0; j < tableWidget->columnCount(); j++)
-    //            {
-    //                QTableWidgetItem *item = new QTableWidgetItem(QString::number(count*count));
-    //                tableWidget->setItem(i, j, item);
-    //                count++;
-    //            }
-    //        }
-
-    //        ui->IntegralIndexVerticalLayout->addWidget(lineEdit);  // Добавляем кнопку в слой с вертикальной компоновкой
-    //        lineEdit->setPlaceholderText(QString::number(NumberLineEdit + 1) + " Integral Index");
-    //        NumberLineEdit++;
-    //        connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(slotGetNumberUnitsIndex()));  // Сигнал от LineEdit вызывается, когда с него снят фокус
-    //    }
-}
-
-// СЛОТ для получения вектора, в котором хранится количество единичных показателей для каждого интегрального
-void MethodsHAWC::slotGetNumberUnitsIndex()
-{
-    QLineEdit *lineEdit = (QLineEdit*) sender();
-    NumberUnitsIndexVector.push_back(lineEdit->text().toInt());
-}
-
-void MethodsHAWC::on_CreateTablesPushButton_clicked()
-{
-    NumberExperts = ui->NumberExpertsLineEdit->text().toInt();
-    NumberAlternative = ui->NumberAlternativeLineEdit->text().toInt();
-
-    tableWidgetValueVector.clear();
-    tableWidgetExpertVector.clear();
-
-    if (ui->HAMRadioButton->isChecked())
-    {
-        // Создаение таблицы для мнений экспертов по ИП
-        QTableWidget *integralIndexTableWidgetExperts = new QTableWidget();
-        integralIndexTableWidgetExperts->setRowCount(NumberIntegralIndex);
-        integralIndexTableWidgetExperts->setColumnCount(NumberExperts);
-        ui->ExpertsVerticalLayout->addWidget(integralIndexTableWidgetExperts);
-        tableWidgetExpertVector.push_back(integralIndexTableWidgetExperts);
-    }
-
-    for (qint32 i = 0; i < NumberIntegralIndex; i++)
-    {
-        // Создание таблиц числовых значений
-        QTableWidget *tableWidgetValue = new QTableWidget();
-        tableWidgetValue->setRowCount(NumberUnitsIndexVector.at(i));
-        tableWidgetValue->setColumnCount(NumberAlternative + 1);  // + 1 столбец нужен для записи направления роста ТУ (1 - повышение, 0 - понижение)
-        tableWidgetValue->resize(100, 100);
-        ui->layout->addWidget(tableWidgetValue);
-        tableWidgetValueVector.push_back(tableWidgetValue);
-
-        // Создание таблиц для оценок экспертов
-        QTableWidget *tableWidgetExperts = new QTableWidget();
-        tableWidgetExperts->setRowCount(NumberUnitsIndexVector.at(i));
-        tableWidgetExperts->setColumnCount(NumberExperts);
-        tableWidgetExperts->resize(100, 100);
-        ui->ExpertsVerticalLayout->addWidget(tableWidgetExperts);
-        tableWidgetExpertVector.push_back(tableWidgetExperts);
-    }
-
-    //    qDebug() << tableWidgetValueVector;
-    //    qDebug() << tableWidgetExpertVector;
-}
-
-QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_tableWidget)
-{
-    qint32 numberIndex;     // Кол-во строк
-    qint32 numberExperts;  // Кол-во столбцов
-    QVector<QVector<float> > vectorFromTableWidget;  // Выходной вектор
-    QVector <float> vectorRows;  // Вектор, хранящий строку
-
-    numberIndex = _tableWidget->rowCount();
-    numberExperts = _tableWidget->columnCount();
-
-    for (qint32 i = 0; i < numberIndex; i++)
-    {
-        for (qint32 j = 0; j < numberExperts; j++)
-        {
-            vectorRows.push_back(_tableWidget->item(i, j)->text().toFloat());
-        }
-        vectorFromTableWidget.push_back(vectorRows);
-        vectorRows.clear();
-    }
-
-    return  vectorFromTableWidget;
-}
+/// ---------------------  ФУНКЦИИ ДЛЯ МВК  ---------------------
 
 void MethodsHAWC::calculationUsingWeightCoefficientMethod()
 {
@@ -318,6 +162,25 @@ void MethodsHAWC::calculationUsingWeightCoefficientMethod()
     }
 
     // Вывод в таблицу итоговую на форме
+
+    ui->finalPrioritetsTableWidget->setRowCount(NumberAlternative - 1);
+    ui->finalPrioritetsTableWidget->setColumnCount(3);
+    ui->finalPrioritetsTableWidget->setHorizontalHeaderLabels(QStringList() << "#" << "Ktu" << "Prospective");
+
+    for (qint32 _row = 0; _row < vectorWithKtuAnalyz.size(); _row++)
+    {
+        QTableWidgetItem *numberKtu = new QTableWidgetItem(QString::number(_row + 3));
+        ui->finalPrioritetsTableWidget->setItem(_row, 0, numberKtu);
+        ui->finalPrioritetsTableWidget->setColumnWidth(0, 30);
+
+        QTableWidgetItem *ktuValue = new QTableWidgetItem(QString::number(vectorWithKtuAnalyz.at(_row).first));
+        ui->finalPrioritetsTableWidget->setItem(_row, 1, ktuValue);
+        ui->finalPrioritetsTableWidget->setColumnWidth(1, 60);
+
+        QTableWidgetItem *assessKtu = new QTableWidgetItem(vectorWithKtuAnalyz.at(_row).second);
+        ui->finalPrioritetsTableWidget->setItem(_row, 2, assessKtu);
+        ui->finalPrioritetsTableWidget->setColumnWidth(2, 120);
+    }
 
     qDebug() << "vectorWithKtuAnalyz = " << vectorWithKtuAnalyz;
     qDebug() << "maxNumberInKtuVector = " << maxNumberInKtuVector;
@@ -533,11 +396,7 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
                                           */
 
         stringWithPosition = "";
-
-        for (qint32 i = 0; i < VVector.size(); i++)
-        {
-            averageSummVVector += VVector.at(i);
-        }
+        averageSummVVector = getVectorSumm(VVector);
         averageSummVVector /= numberIndex;
 
         for (qint32 i = 0; i < VVector.size(); i++)  // Находим показатели, которые надо скорректировать
@@ -545,16 +404,51 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
             if (VVector.at(i) >= averageSummVVector) stringWithPosition += QString::number(i + 1) + " ";
         }
 
-        QMessageBox::information(this, "Error", "Expert opinions are not agreed. \n Please check index " + stringWithPosition
+        QMessageBox::warning(this, "Error", "Expert opinions are not agreed. \n Please check index " + stringWithPosition
                                  + "\n in table " + QString::number(_tableNumber + 1));
-        VVector.push_back(-42);
-        // VVector[0] = -42;  // Флаг, показывающий, что мнения не согласованы и дальнейшие расчеты не имеют смысла
-        return VVector;
+        VVector.push_back(-42);  // Флаг, показывающий, что мнения не согласованы и дальнейшие расчеты не имеют смысла
+        return averageVector;
     }
 }
 
 float MethodsHAWC::getHeeSquareTableValue(int n, int p)
 {
+    // Таблица значений Хи^2
+    float heeSquareTableMatrixNew [30][14]  = {
+                    // 0.99   0.98   0.95   0.90   0.80
+        /*1(0)*/    { 0.000, 0.001, 0.004, 0.016, 0.064 },
+        /*2(1)*/    { 0.020, 0.040, 0.103, 0.211, 0.446 },
+        /*3(2)*/    { 0.115, 0.185, 0.352, 0.584, 1.005 },
+        /*4(3)*/    { 0.297, 0.429, 0.711, 1.064, 1.649 },
+        /*5(4)*/    { 0.554, 0.752, 1.145, 1.610, 2.340 },
+        /*6(5)*/    { 0.872, 1.134, 1.635, 2.200, 3.070 },
+
+        /*7(6)*/    { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*8(7)*/    { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*9(8)*/    { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*10(9)*/   { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*11(10)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*12(11)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*13(12)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*14(13)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*15(14)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*16(15)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*17(16)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*18(17)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*19(18)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*20(19)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*21(20)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*22(21)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*23(22)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*24(23)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*25(24)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*26(25)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*27(26)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*28(27)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*29(28)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+        /*30(29)*/  { 0.872, 1.134, 1.635, 2.200, 3.070 },
+    };
+
     int   r   = n - 1 - 1;  // Первый "-1" по формуле, второй "-1", потому что считаем от 0
     float valueInRP;
 
@@ -595,10 +489,169 @@ QString MethodsHAWC::assessProspects(float _ktu)
 {
     QString prospectsResult;
 
-    if (_ktu < 1.065 )                 return prospectsResult = "Not promising.";
-    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unpromising.";
-    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Promising.";
-    if (_ktu > 1.27  )                 return prospectsResult = "Very promising.";
+    if (_ktu < 1.065 )                 return prospectsResult = "Not promising";
+    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unpromising";
+    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Promising";
+    if (_ktu > 1.27  )                 return prospectsResult = "Very promising";
+}
+
+/// ---------------------  ОБЩИЕ ФУНКЦИИ  -------------------------
+
+/* При нажатии на кнопку в Layout создаютя LineEdit
+ * для ввода количества единичных показателей,
+ * соответствующие каждому интегральному показателю
+ */
+void MethodsHAWC::on_CreateSingleIndexPushButton_clicked()
+{
+    NumberIntegralIndex = ui->NumberIntegralIndexLineEdit->text().toInt();
+
+    for (qint32 i = 0; i < NumberIntegralIndex; i++)
+    {
+        // QSharedPointer<QLineEdit> lineEdit(new QLineEdit());
+        QLineEdit *lineEdit = new QLineEdit();
+        lineEdit->setPlaceholderText(QString::number(NumberLineEdit + 1) + " Integral Index");
+        ui->IntegralIndexVerticalLayout->addWidget(lineEdit);
+        connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(slotGetNumberUnitsIndex()));  // Сигнал от LineEdit вызывается, когда с него снят фокус
+        NumberLineEdit++;
+    }
+
+
+    //    ui->IntegralIndexVerticalLayout->addWidget(lineEdit);  // Добавляем кнопку в слой с вертикальной компоновкой
+    //    lineEdit->setPlaceholderText(QString::number(NumberLineEdit + 1) + " Integral Index");
+    //    NumberLineEdit++;
+    //    connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(slotGetNumberUnitsIndex()));  // Сигнал от LineEdit вызывается, когда с него снят фокус
+
+    //ui->scrollArea->setWidgetResizable(true);
+
+    //    for (int k = 0; k < NumberIntegralIndex; k++)
+    //    {
+    //        // DynamicLineEdit *lineEdit = new DynamicLineEdit();  // Создаем объект динамической кнопки
+    //        QLineEdit *lineEdit = new QLineEdit();
+    //        QTableWidget *tableWidget = new QTableWidget;
+    //        QLabel *label = new QLabel;
+    //        QSharedPointer<QTableWidget> tableWidget1(new QTableWidget);
+
+
+    //        label->setText("Integral Index " + QString::number(NumberLineEdit));
+    //        tableWidget->setRowCount(6);
+    //        tableWidget->setColumnCount(5);
+    //        tableWidget->setHorizontalHeaderLabels(QStringList() << "a" << "b" << "c" << "d" << "e");
+    //        //tableWidget->setMinimumWidth(100);
+    //        //tableWidget->setMinimumHeight(100);
+    //        //ui->layout->addWidget(label);
+    //        //ui->layout->addWidget(tableWidget);
+    //        ui->layout->addWidget(tableWidget);
+
+    //        //tableWidget->resize(2000, 2000);
+
+    //        //        ui->scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    //        ui->scrollArea->setWidgetResizable(true);
+    //        //ui->scrollArea->setLayout(layout);
+
+    //        int count = 1;
+    //        for (int i = 0; i <tableWidget->rowCount(); i++)
+    //        {
+    //            for (int j = 0; j < tableWidget->columnCount(); j++)
+    //            {
+    //                QTableWidgetItem *item = new QTableWidgetItem(QString::number(count*count));
+    //                tableWidget->setItem(i, j, item);
+    //                count++;
+    //            }
+    //        }
+
+    //        ui->IntegralIndexVerticalLayout->addWidget(lineEdit);  // Добавляем кнопку в слой с вертикальной компоновкой
+    //        lineEdit->setPlaceholderText(QString::number(NumberLineEdit + 1) + " Integral Index");
+    //        NumberLineEdit++;
+    //        connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(slotGetNumberUnitsIndex()));  // Сигнал от LineEdit вызывается, когда с него снят фокус
+    //    }
+}
+
+// СЛОТ для получения вектора, в котором хранится количество единичных показателей для каждого интегрального
+void MethodsHAWC::slotGetNumberUnitsIndex()
+{
+    QLineEdit *lineEdit = (QLineEdit*) sender();
+    NumberUnitsIndexVector.push_back(lineEdit->text().toInt());
+}
+
+void MethodsHAWC::on_CreateTablesPushButton_clicked()
+{
+    NumberExperts = ui->NumberExpertsLineEdit->text().toInt();
+    NumberAlternative = ui->NumberAlternativeLineEdit->text().toInt();
+
+    tableWidgetValueVector.clear();
+    tableWidgetExpertVector.clear();
+
+    if (ui->HAMRadioButton->isChecked())
+    {
+        // Создаение таблицы для мнений экспертов по ИП
+        QTableWidget *integralIndexTableWidgetExperts = new QTableWidget();
+        integralIndexTableWidgetExperts->setRowCount(NumberIntegralIndex);
+        integralIndexTableWidgetExperts->setColumnCount(NumberExperts);
+        resizeColumnWidth(integralIndexTableWidgetExperts);
+        ui->ExpertsVerticalLayout->addWidget(integralIndexTableWidgetExperts);
+        tableWidgetExpertVector.push_back(integralIndexTableWidgetExperts);
+    }
+
+    for (qint32 i = 0; i < NumberIntegralIndex; i++)
+    {
+        // Создание таблиц числовых значений
+        QTableWidget *tableWidgetValue = new QTableWidget();
+        tableWidgetValue->setRowCount(NumberUnitsIndexVector.at(i));
+        tableWidgetValue->setColumnCount(NumberAlternative + 1);  // + 1 столбец нужен для записи направления роста ТУ (1 - повышение, 0 - понижение)
+        resizeColumnWidth(tableWidgetValue);
+        //tableWidgetValue->resize(100, 100);
+        ui->layout->addWidget(tableWidgetValue);
+        tableWidgetValueVector.push_back(tableWidgetValue);
+
+        // Создание таблиц для оценок экспертов
+        QTableWidget *tableWidgetExperts = new QTableWidget();
+        tableWidgetExperts->setRowCount(NumberUnitsIndexVector.at(i));
+        tableWidgetExperts->setColumnCount(NumberExperts);
+        resizeColumnWidth(tableWidgetExperts);
+        //tableWidgetExperts->resize(100, 100);
+        ui->ExpertsVerticalLayout->addWidget(tableWidgetExperts);
+        tableWidgetExpertVector.push_back(tableWidgetExperts);
+    }
+
+    //    qDebug() << tableWidgetValueVector;
+    //    qDebug() << tableWidgetExpertVector;
+}
+
+QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_tableWidget)
+{
+    qint32 numberIndex;     // Кол-во строк
+    qint32 numberExperts;  // Кол-во столбцов
+    QVector<QVector<float> > vectorFromTableWidget;  // Выходной вектор
+    QVector <float> vectorRows;  // Вектор, хранящий строку
+
+    numberIndex = _tableWidget->rowCount();
+    numberExperts = _tableWidget->columnCount();
+
+    for (qint32 i = 0; i < numberIndex; i++)
+    {
+        for (qint32 j = 0; j < numberExperts; j++)
+        {
+            if (_tableWidget->item(i, j)->text() == "")
+            {
+                QMessageBox::warning(this, "Error", "Not all values entered in tables. \n Check tables.");
+                break;
+            } else {
+                 vectorRows.push_back(_tableWidget->item(i, j)->text().toFloat());
+            }
+        }
+        vectorFromTableWidget.push_back(vectorRows);
+        vectorRows.clear();
+    }
+
+    return  vectorFromTableWidget;
+}
+
+void MethodsHAWC::resizeColumnWidth(QTableWidget *_tableWidget)
+{
+    for (qint32 _column = 0; _column < _tableWidget->columnCount(); _column++)
+    {
+        _tableWidget->setColumnWidth(_column, 60);
+    }
 }
 
 void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)  // Сохранение таблицы в .SCV формат

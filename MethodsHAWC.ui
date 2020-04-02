@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1623</width>
+    <width>1374</width>
     <height>693</height>
    </rect>
   </property>
@@ -212,18 +212,18 @@
    <widget class="QTableWidget" name="tableWidget">
     <property name="geometry">
      <rect>
-      <x>1050</x>
-      <y>110</y>
-      <width>371</width>
-      <height>241</height>
+      <x>1130</x>
+      <y>540</y>
+      <width>221</width>
+      <height>101</height>
      </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="TEST_BTN">
     <property name="geometry">
      <rect>
-      <x>1200</x>
-      <y>400</y>
+      <x>1040</x>
+      <y>630</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -232,13 +232,36 @@
      <string>TEST BTN</string>
     </property>
    </widget>
+   <widget class="QGroupBox" name="groupBox_5">
+    <property name="geometry">
+     <rect>
+      <x>1040</x>
+      <y>20</y>
+      <width>321</width>
+      <height>471</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Итоговые приоритеты</string>
+    </property>
+    <widget class="QTableWidget" name="finalPrioritetsTableWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>291</width>
+       <height>371</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1623</width>
+     <width>1374</width>
      <height>21</height>
     </rect>
    </property>
