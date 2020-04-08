@@ -35,7 +35,7 @@ public:
     QVector<float> checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber, qint32 _tableNumber);
 
     // Получение значения Хи^2, где n - кол-во показателей, p - номер столбца, соответсвующий (1 - mu)
-    float getHeeSquareTableValue(int n, int p);
+    float getHeeSquareTableValue(int _numberIndex, int _nu);
 
     // Заполенение двух векторов векторами, полученными из таблиц, для дальнейших вычислений
     void fillVectorsWithValuesFromTableWidget();
@@ -45,6 +45,9 @@ public:
 
     // Функция оценки перспективности образца СТС
     QString assessProspects(float _ktu);
+
+    // Вспомогательная функция для сравнения чисел с плавающей точкой
+    bool equalFloatingValue(float _value1, float _value2, float _epsilon);
 
 signals:
     void openMainWindow();

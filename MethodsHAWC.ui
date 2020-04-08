@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1374</width>
+    <width>1323</width>
     <height>693</height>
    </rect>
   </property>
@@ -76,7 +76,7 @@
       <item row="4" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Число P для X^2</string>
+         <string>Число μ для χ^2</string>
         </property>
        </widget>
       </item>
@@ -212,8 +212,8 @@
    <widget class="QTableWidget" name="tableWidget">
     <property name="geometry">
      <rect>
-      <x>1130</x>
-      <y>540</y>
+      <x>1050</x>
+      <y>530</y>
       <width>221</width>
       <height>101</height>
      </rect>
@@ -222,8 +222,8 @@
    <widget class="QPushButton" name="TEST_BTN">
     <property name="geometry">
      <rect>
-      <x>1040</x>
-      <y>630</y>
+      <x>910</x>
+      <y>650</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -237,8 +237,8 @@
      <rect>
       <x>1040</x>
       <y>20</y>
-      <width>321</width>
-      <height>471</height>
+      <width>271</width>
+      <height>411</height>
      </rect>
     </property>
     <property name="title">
@@ -249,7 +249,7 @@
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>291</width>
+       <width>251</width>
        <height>371</height>
       </rect>
      </property>
@@ -261,7 +261,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1374</width>
+     <width>1323</width>
      <height>21</height>
     </rect>
    </property>
