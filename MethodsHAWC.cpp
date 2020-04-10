@@ -521,7 +521,7 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
 {
     QVector<float> integralPrioritets;         // ’ранит локальные приоритеты по интегральным показател€м
     QVector<QVector<float>> unitsPrioritets;   // ’ранит локальные приоритеты по единичным показател€м
-    QVector<QVector<float>> valuesPrioritets;  // ’ранит локальные приоритеты по числовым характеристикам
+    QVector<QVector<float>*> valuesPrioritets; // ’ранит локальные приоритеты по числовым характеристикам
     QPair<qint32, float> finalPrioritets;      // ’ранит итоговые приоритеты с соответсвующими индексами альтернатив
 
     for (qint32 _table = 0; _table < vectorWithVectorExperts.size(); _table++)
@@ -547,11 +547,30 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
         }
     }
 
+    // «аполнение вектора числовых парамтеров новыми веторами
+    // по количеству альтернатив (перед циклом по таблицам с числовыми харакетристиками)
+    for (qint32 _row = 0; _row < NumberAlternative; _row++)
+    {
+        QVector<float> *newVector = new QVector<float>;
+        valuesPrioritets.push_back(newVector);
+    }
+
     for (qint32 _table = 0; _table < vectorWithVectorValue.size(); _table++)
     {
         for (qint32 _row = 0; _row < vectorWithVectorValue.at(_table).size(); _row++)
         {
-            valuesPrioritets.push_back(calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorValue.at(_table).at(_row)), 1, 0, _table));
+            QVector<float> currentLocalPrioritets;  // ¬ектор дл€ тукущих локальных приоритетов по каждому ≈ѕ
+            currentLocalPrioritets =  calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorValue.at(_table).at(_row)), 1, 0, _table);
+
+            // «апись в вектор с числовыми параметрами вычисленных
+            // локальных приоритетов из вектора по строкам матрицы
+            // (каждый раз после вычислени€ локальных приоритетов дл€ каждого ≈ѕ)
+            for (qint32 _row = 0; _row < currentLocalPrioritets.size(); _row++)
+            {
+                valuesPrioritets.at(_row)->push_back(currentLocalPrioritets.at(_row));
+            }
+
+            currentLocalPrioritets.clear();
         }
     }
 
