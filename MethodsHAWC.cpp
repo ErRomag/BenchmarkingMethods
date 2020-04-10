@@ -55,7 +55,7 @@ void MethodsHAWC::on_CalculationPushButton_clicked()
 
     if (ui->HAMRadioButton->isChecked())  // Если МАИ
     {
-
+        calculationUsingHierarchyAnalysisMethod();
     }
     else if (ui->WCMRadioButton->isChecked())  // Если МВК
     {
@@ -411,18 +411,6 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
     }
 }
 
-// Вспомогательная функция, сравнивающая два числа с плавающей точкой
-bool MethodsHAWC::equalFloatingValue(float _value1, float _value2, float _epsilon)
-{
-    if ( abs(_value1 - _value2) < _epsilon )
-    {
-        return true;
-    } else
-    {
-        return false;
-    }
-}
-
 float MethodsHAWC::getHeeSquareTableValue(int _numberIndex, int _nu)
 {
     // Таблица значений Хи^2
@@ -517,34 +505,6 @@ float MethodsHAWC::getHeeSquareTableValue(int _numberIndex, int _nu)
     return heeSquareTableMatrixNew[r][_column];
 }
 
-void MethodsHAWC::fillVectorsWithValuesFromTableWidget()
-{
-    vectorWithVectorValue.clear();
-    vectorWithVectorExperts.clear();
-
-    for (qint32 i = 0; i < tableWidgetValueVector.size(); i++)
-    {
-        vectorWithVectorValue.push_back(getQVectorFromQTableWidget(tableWidgetValueVector.at(i)));
-    }
-
-    for (qint32 i = 0; i < tableWidgetExpertVector.size(); i++)
-    {
-        vectorWithVectorExperts.push_back(getQVectorFromQTableWidget(tableWidgetExpertVector.at(i)));
-    }
-}
-
-float MethodsHAWC::getVectorSumm(QVector<float> _dataVector)
-{
-    float vectorSumm = 0.0;
-
-    for (qint32 i = 0; i < _dataVector.size(); i++)
-    {
-        vectorSumm += _dataVector.at(i);
-    }
-
-    return  vectorSumm;
-}
-
 QString MethodsHAWC::assessProspects(float _ktu)
 {
     QString prospectsResult;
@@ -553,6 +513,234 @@ QString MethodsHAWC::assessProspects(float _ktu)
     if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unpromising";
     if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Promising";
     if (_ktu > 1.27  )                 return prospectsResult = "Very promising";
+}
+
+/// ---------------------  ФУНКЦИИ ДЛЯ МАИ  ---------------------
+
+void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
+{
+    QVector<float> integralPrioritets;         // Хранит локальные приоритеты по интегральным показателям
+    QVector<QVector<float>> unitsPrioritets;   // Хранит локальные приоритеты по единичным показателям
+    QVector<QVector<float>> valuesPrioritets;  // Хранит локальные приоритеты по числовым характеристикам
+    QPair<qint32, float> finalPrioritets;      // Хранит итоговые приоритеты с соответсвующими индексами альтернатив
+
+    for (qint32 _table = 0; _table < vectorWithVectorExperts.size(); _table++)
+    {
+        if (_table == 0)
+        {
+            if (NumberIntegralIndex == 1)
+            {
+                integralPrioritets = calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorExperts.at(_table).at(0)), 1, 1, _table);
+            } else {
+                integralPrioritets = calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorExperts.at(_table)), 1, 0, _table);
+            }
+            qDebug() << "integralPrioritets = " << integralPrioritets;
+        }
+        else
+        {
+            if (NumberUnitsIndexVector.at(_table - 1) == 1)
+            {
+                unitsPrioritets.push_back(calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorExperts.at(_table).at(0)), 1, 1, _table));
+            } else {
+                unitsPrioritets.push_back(calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorExperts.at(_table)), 1, 0, _table));
+            }
+        }
+    }
+
+    for (qint32 _table = 0; _table < vectorWithVectorValue.size(); _table++)
+    {
+        for (qint32 _row = 0; _row < vectorWithVectorValue.at(_table).size(); _row++)
+        {
+            valuesPrioritets.push_back(calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorValue.at(_table).at(_row)), 1, 0, _table));
+        }
+    }
+
+    qDebug() << "intgralPrioritets = " << integralPrioritets;
+    qDebug() << "unitsProiritets = " << unitsPrioritets;
+
+}
+
+QVector<float> MethodsHAWC::calculationLocalPrioritets(QVector<QVector<float> > _pairedComparsionMatrix,
+                                                       bool _flagCheckOpinion,
+                                                       bool _flagIfRowExpert,
+                                                       qint32 _numberTable)
+{
+    qint32 numberRows;     // Кол-во строк МПС
+    qint32 numberColumns;  // Кол-во столбцов МПС
+
+    QVector<float> artworkVector;          // Вектор произведений по строкам МПС (матрица парных сранвнений)
+    QVector<float> rootsVector;            // Вектор корней из произведений МПС
+    QVector<float> localPrioritetsVector;  // Вектор найденных локальных приоритетов
+    QVector<float> lambdasVector;          // Вектор лямбд для определения соглсованности
+    QVector<float> summColumnsVector;      // Вектор сумм по стобцам
+
+    float currentColumnSumm;  // Сумма элементов текущего столбца
+    float currentRowArtwork;  // Произведение элементов текущей строкире корней
+    float lambdaMax;            // Число лямбда для вычисления согласованности
+    float indexConsistency;     // Индекс согласованности
+    float relativeConsistency;  // Относительная согласованность
+    float randomConsistency;    // Случайная согласованность
+
+    artworkVector.clear();
+    rootsVector.clear();
+    localPrioritetsVector.clear();
+    float summRoots;            // Сумма чисел в векто
+    lambdasVector.clear();
+    summColumnsVector.clear();
+
+    numberRows = _pairedComparsionMatrix.size();
+    numberColumns = _pairedComparsionMatrix.at(0).size();
+
+    // Вычисление вектора произведений
+    for (qint32 _row = 0; _row < numberRows; _row++)
+    {
+        currentRowArtwork = 1;
+
+        for (qint32 _column = 0; _column < numberColumns; _column++)
+        {
+            currentRowArtwork *= _pairedComparsionMatrix.at(_row).at(_column);
+        }
+
+        artworkVector.push_back(currentRowArtwork);
+    }
+
+    // Вычисление суммы чисел в каждом столбце
+    for (qint32 _column = 0; _column < numberColumns; _column++)
+    {
+        currentColumnSumm = 0;
+
+        for (qint32 _row = 0; _row < numberRows; _row++)
+        {
+            currentColumnSumm += _pairedComparsionMatrix.at(_row).at(_column);
+        }
+        summColumnsVector.push_back(currentColumnSumm);
+    }
+
+    // Вычисление корней произведений
+    for (qint32 _row = 0; _row < numberRows; _row++)
+    {
+        rootsVector.push_back(pow(artworkVector.at(_row), (1 / static_cast<float>(numberRows))));
+    }
+
+    // Находим сумму корней
+    summRoots = getVectorSumm(rootsVector);
+
+    // Вычисление локальных приоритетов
+    for (qint32 _row = 0; _row < numberRows; _row++)
+    {
+        localPrioritetsVector.push_back(rootsVector.at(_row) / summRoots);
+    }
+
+    // Вычисление вектора лямбд
+    for (qint32 _row = 0; _row < numberRows; _row++)
+    {
+        lambdasVector.push_back((localPrioritetsVector.at(_row)) * (summColumnsVector.at(_row)));
+    }
+
+    // Вычисление максимального значения лямбда
+    lambdaMax = getVectorSumm(lambdasVector);
+
+    if (_flagCheckOpinion)
+    {
+        indexConsistency = (lambdaMax - numberRows) / (numberRows - 1);
+        randomConsistency = getRandomConsistency(numberRows);
+        relativeConsistency = indexConsistency / randomConsistency;
+
+        if (relativeConsistency > 0.1)
+        {
+            QMessageBox::warning(this, "Error", "In table " + QString::number(_numberTable + 1) +
+                                 "\nExperts opinion not agree.");
+        } else {
+            QMessageBox::information(this, "Information", "In table " + QString::number(_numberTable + 1) +
+                                     "\nExperts opinion agree.");
+        }
+    }
+
+    // Если обрабатываемая матрица ОЦЕНОК ЭКСПЕРТОВ оказалась вектором, то усредняем значения локальных приоритетов
+    if (_flagIfRowExpert)
+    {
+        float arithmeticMeanLocalPrioritets;
+
+        arithmeticMeanLocalPrioritets = getArithmeticMean(localPrioritetsVector);
+        localPrioritetsVector.clear();
+        localPrioritetsVector.push_back(arithmeticMeanLocalPrioritets);
+    }
+
+    qDebug() << "artworkVector = " << artworkVector;          // Вектор произведений по строкам МПС (матрица парных сранвнений)
+    qDebug() << "rootsVector = " << rootsVector;            // Вектор корней из произведений МПС
+    qDebug() << "localPrioritetsVector = " << localPrioritetsVector;  // Вектор найденных локальных приоритетов
+    qDebug() << "lambdasVector = " << lambdasVector;          // Вектор лямбд для определения соглсованности
+    qDebug() << "summColumnsVector = " << summColumnsVector;      // Вектор сумм по стобцам
+    qDebug() << "relativeConsistency = " << relativeConsistency;
+    qDebug() << "indexConsistency = " << indexConsistency;
+    qDebug() << "randomConsistency = " << randomConsistency;
+    qDebug() << "lambdaMax = " << lambdaMax;
+
+    return localPrioritetsVector;
+}
+
+QVector<QVector<float> > MethodsHAWC::getMatrixPairedComparsion(QVector<float> _rowOpinionOrValue)
+{
+    QVector<QVector<float>> pairedComparsionMatrix;  // Матрица парных сравнений
+    QVector<float> rowPairedComparsionMatrix;        // Строка матрицы парных сравнений
+
+    qint32 numberRowsColumns;  // Кол-во строк, они жее стобцы, так как матрицы квадратная
+
+    pairedComparsionMatrix.clear();
+    rowPairedComparsionMatrix.clear();
+
+    numberRowsColumns = _rowOpinionOrValue.size();
+
+    // Заполняем матрицу парных сравнений
+    for (qint32 _row = 0; _row < numberRowsColumns; _row++)
+    {
+        for (qint32 _column = 0; _column < numberRowsColumns; _column++)
+        {
+            // Находим отношение оценок относительно друг друга по каждому показателю
+            rowPairedComparsionMatrix.push_back(_rowOpinionOrValue.at(_column) / _rowOpinionOrValue.at(_row));
+        }
+        pairedComparsionMatrix.push_back(rowPairedComparsionMatrix);
+        rowPairedComparsionMatrix.clear();
+    }
+
+    return pairedComparsionMatrix;
+}
+
+QVector<QVector<float> > MethodsHAWC::getMatrixPairedComparsion(QVector<QVector<float> > _tableOpinionOrValue)
+{
+    QVector<QVector<float>> pairedComparsionMatrix;  // Матрица парных сравнений
+    QVector<float> arithmeticMeanVector;             // Вектор средних арифметических по строкам матрицы
+    qint32 numberRows;                               // Кол-во строк в матрице
+
+    arithmeticMeanVector.clear();
+    pairedComparsionMatrix.clear();
+
+    numberRows = _tableOpinionOrValue.size();
+
+    // Для каждой строки матрицы находим среднее арифметическое оценок
+    for (qint32 _row = 0; _row < numberRows; _row++)
+    {
+        arithmeticMeanVector.push_back(getArithmeticMean(_tableOpinionOrValue.at(_row)));
+    }
+
+    // Находим матрицу парных сравнений для найденных средних арифметических
+    pairedComparsionMatrix = getMatrixPairedComparsion(arithmeticMeanVector);
+
+    return pairedComparsionMatrix;
+}
+
+float MethodsHAWC::getRandomConsistency(qint32 _matrixSize)
+{
+    float matrixRandomConsistency[15] =
+    {0, 0, 0.58, 0.9, 1.2, 1.24, 1.32, 1.41, 1.45, 1.49, 1.51, 1.54, 1.56, 1.57, 1.59};
+
+    if ((_matrixSize - 1) > 16)
+    {
+        QMessageBox::warning(this, "Error", "Value matrix size is out of range. \n Random consistency = 1.59");
+        return matrixRandomConsistency[15];
+    } else {
+        return matrixRandomConsistency[_matrixSize - 1];
+    }
 }
 
 /// ---------------------  ОБЩИЕ ФУНКЦИИ  -------------------------
@@ -671,7 +859,7 @@ void MethodsHAWC::resizeColumnWidth(QTableWidget *_tableWidget)
     }
 }
 
-void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)  // Сохранение таблицы в .SCV формат
+void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)
 {
     QFile tableFile(filename);
 
@@ -697,6 +885,50 @@ void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)  // Сох
         }
 
         tableFile.close();
+    }
+}
+
+void MethodsHAWC::fillVectorsWithValuesFromTableWidget()
+{
+    vectorWithVectorValue.clear();
+    vectorWithVectorExperts.clear();
+
+    for (qint32 i = 0; i < tableWidgetValueVector.size(); i++)
+    {
+        vectorWithVectorValue.push_back(getQVectorFromQTableWidget(tableWidgetValueVector.at(i)));
+    }
+
+    for (qint32 i = 0; i < tableWidgetExpertVector.size(); i++)
+    {
+        vectorWithVectorExperts.push_back(getQVectorFromQTableWidget(tableWidgetExpertVector.at(i)));
+    }
+}
+
+float MethodsHAWC::getVectorSumm(QVector<float> _dataVector)
+{
+    float vectorSumm = 0.0;
+
+    for (qint32 i = 0; i < _dataVector.size(); i++)
+    {
+        vectorSumm += _dataVector.at(i);
+    }
+
+    return  vectorSumm;
+}
+
+float MethodsHAWC::getArithmeticMean(QVector<float> _vector)
+{
+    return getVectorSumm(_vector) / _vector.size();
+}
+
+bool MethodsHAWC::equalFloatingValue(float _value1, float _value2, float _epsilon)
+{
+    if ( abs(_value1 - _value2) < _epsilon )
+    {
+        return true;
+    } else
+    {
+        return false;
     }
 }
 
