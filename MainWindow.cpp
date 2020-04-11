@@ -18,8 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowIcon(MWIcon);
     setWindowTitle("Methods of comparative assessments");
 
-    // Описание MenuBar
-
+    // MenuBar
     exitAction = new QAction("&Exit", this);
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
     aboutAction = new QAction("&About programm");
@@ -30,8 +29,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     fileMenu->addAction(exitAction);
     helpMenu->addAction(aboutAction);
-
-    // Описание кнопок, их рамеров и иконок
 
     QPixmap pixmapHAM(":/Icon/IconHAMGrad.png");
     QIcon ButtonHAMIcon(pixmapHAM);
@@ -44,15 +41,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->ButtonPriorityTechnology->setIcon(QIcon(ButtonPriorityIcon));
     ui->ButtonPriorityTechnology->setIconSize(IcoBtnSize);
     ui->ButtonPriorityTechnology->setFixedSize(IcoBtnSize);
-
-    // Создание экземпляров классов окон
-
-    methodsHAWC              = new MethodsHAWC();
-    connect(methodsHAWC, &MethodsHAWC::openMainWindow, this, &MainWindow::show);
-
-    priorityTechnologyWindow = new PriorityTechnology();  // Create object class to PriorityTechnology
-    connect(priorityTechnologyWindow, &PriorityTechnology::openMainWindow, this, &MainWindow::show);
-
 }
 
 MainWindow::~MainWindow()
@@ -75,13 +63,18 @@ void MainWindow::aboutProgramm()
 
 void MainWindow::on_ButtonPriorityTechnology_clicked()
 {
+    priorityTechnologyWindow = new PriorityTechnology();
+    connect(priorityTechnologyWindow, &PriorityTechnology::openMainWindow, this, &MainWindow::show);
+
     priorityTechnologyWindow->showMaximized();
     this->close();
-
 }
 
 void MainWindow::on_ButtonHAWCM_clicked()
 {
+    methodsHAWC = new MethodsHAWC();
+    connect(methodsHAWC, &MethodsHAWC::openMainWindow, this, &MainWindow::show);
+
     methodsHAWC->showMaximized();
     this->close();
 }

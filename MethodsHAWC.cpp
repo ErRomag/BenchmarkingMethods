@@ -19,8 +19,7 @@ MethodsHAWC::MethodsHAWC(QWidget *parent) :
     QIcon HAMWindowIcon(pixmapHAMWindow);
     setWindowIcon(HAMWindowIcon);
 
-    // Описание MenuBar
-
+    // MenuBar
     openMainWindowAction = new QAction("&Choose method", this);
     connect(openMainWindowAction, SIGNAL(triggered()), this, SLOT(onOpenMainWindowClicked()));
     exitAction = new QAction("&Exit", this);
@@ -33,7 +32,7 @@ MethodsHAWC::MethodsHAWC(QWidget *parent) :
     fileMenu->addAction(exitAction);
 
     NumberLineEdit = 0;
-
+    ui->WCMRadioButton->setChecked(true);
 }
 
 MethodsHAWC::~MethodsHAWC()
@@ -51,15 +50,19 @@ void MethodsHAWC::on_CalculationPushButton_clicked()
 {
     fillVectorsWithValuesFromTableWidget();  // Заполняем векторы для расчетов
 
-    // Тут происходит определение метода расчета и сам расчет
-
     if (ui->HAMRadioButton->isChecked())  // Если МАИ
     {
         calculationUsingHierarchyAnalysisMethod();
     }
     else if (ui->WCMRadioButton->isChecked())  // Если МВК
     {
-        calculationUsingWeightCoefficientMethod();
+        if (ui->PforHeeSquareLineEdit->text() == "")
+        {
+            QMessageBox::warning(this, "Error", "Nu value not entered");
+        } else
+        {
+            calculationUsingWeightCoefficientMethod();
+        }
     }
 }
 
@@ -71,14 +74,14 @@ void MethodsHAWC::calculationUsingWeightCoefficientMethod()
     QVector<QVector<float>> kpiFiTableVector;           // Таблица со строками, хранящимим значения Кпi
     QVector<float> ktuVector;                           // Содержит значния Кту для каждой альтерантивы
     QVector<float> allAverageVector;                    // Хранит сумму средних арифметических для каждой таблицы по каждому показателю
-    qint32 HeeSquareValueColumn;                        // Номер столбца в таблице Хи^2
+    float HeeSquareValueColumn;                        // Номер столбца в таблице Хи^2
     QVector<QPair<float, QString>> vectorWithKtuAnalyz; // Вектор, хранящий значения Кту и анализ перспективности
 
     allAverageVector.clear();
     ktuVector.clear();
     vectorWithKtuAnalyz.clear();
 
-    HeeSquareValueColumn =  ui->PforHeeSquareLineEdit->text().toInt();  // Номер столбца для рассчетов Хи^2
+    HeeSquareValueColumn =  ui->PforHeeSquareLineEdit->text().toFloat();  // Номер столбца для рассчетов Хи^2
 
     for (qint32 _table = 0; _table < vectorWithVectorValue.size(); _table++)
     {
@@ -186,7 +189,7 @@ void MethodsHAWC::calculationUsingWeightCoefficientMethod()
     qDebug() << "maxNumberInKtuVector = " << maxNumberInKtuVector;
 }
 
-QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber, qint32 _tableNumber)
+QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, float _heeSquareCoefficient, qint32 _tableNumber)
 {
     qint32 numberIndex;             // Кол-во показателей
     qint32 numberExperts;           // Кол-во экспертов
@@ -200,7 +203,7 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
     // РАСЧЕТ КОЭФФИЦИЕНТА КОНКОРДАЦИИ И КОЭФФИЦИЕНТА ХИ^2
     float omega = 0.0;                        // Коэффициент конкордации
     float actualValueHeeSquare = 0.0;         // Фактическое значение Хи^2
-    float theoreticalValueHeeSquare = getHeeSquareTableValue(numberIndex, _columnNumber);  // Брем из таблицы
+    float theoreticalValueHeeSquare = getHeeSquareTableValue(numberIndex, _heeSquareCoefficient);  // Брем из таблицы
 
     averageVector.clear();
     SCOVector.clear();
@@ -212,12 +215,6 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
     if (numberIndex == 0 | numberExperts == 0)
     {
         QMessageBox::warning(this, "Warning!", "Количество экспертов или показателей равно 0!");
-    }
-    else if ( numberIndex == 1)
-    {
-        omega = 0;
-        actualValueHeeSquare = 0;
-
     } else {
 
         // Вычисление средного арифметического оценок экспертов для каждого показателя
@@ -353,65 +350,74 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
         }
         S /= numberIndex;
 
-
-        float summDiSqrt = 0.0;  // Сумма отклонений в квадрате для коэфф. конкордации и значения критерия Пирсона
-
-        for (int i = 0; i < vectorS.size(); i++)
+        if ( numberIndex == 1)
         {
-            summDiSqrt += pow((vectorS.at(i) - S), 2);
+            // В одной строке точно согласованы
+            QMessageBox::information(this, "Information", "In table " + QString::number(_tableNumber + 1)
+                                     + " expert opinions agreed.");
+            return  averageVector;
         }
-
-        float summTi = 0.0;  /* Показатель совокупности рангов по i-му показателю
-                              * (сразу рассчитывается сумма, так как только она понадобится в дальнейшем)
-                              */
-
-        QVector<float> vectorTi;  // Нужен, чтобы вывести в таблицу значения, если необходимо будет
-
-        for (int i = 0; i < SearchNumberVector.size(); i++)
+        else
         {
-            for (int j = 0; j < SearchNumberVector.at(i).size(); j++)
+            float summDiSqrt = 0.0;  // Сумма отклонений в квадрате для коэфф. конкордации и значения критерия Пирсона
+
+            for (int i = 0; i < vectorS.size(); i++)
             {
-                summTi += (pow(SearchNumberVector.at(i).at(j), 3) - SearchNumberVector.at(i).at(j));
+                summDiSqrt += pow((vectorS.at(i) - S), 2);
             }
+
+            float summTi = 0.0;  /* Показатель совокупности рангов по i-му показателю
+                                  * (сразу рассчитывается сумма, так как только она понадобится в дальнейшем)
+                                  */
+
+            QVector<float> vectorTi;  // Нужен, чтобы вывести в таблицу значения, если необходимо будет
+
+            for (int i = 0; i < SearchNumberVector.size(); i++)
+            {
+                for (int j = 0; j < SearchNumberVector.at(i).size(); j++)
+                {
+                    summTi += (pow(SearchNumberVector.at(i).at(j), 3) - SearchNumberVector.at(i).at(j));
+                }
+            }
+
+            omega = (12 * summDiSqrt) / (pow(numberExperts, 2) * (pow(numberIndex, 3) - 1) - numberExperts * summTi);
+            actualValueHeeSquare = (12 * summDiSqrt) / (numberExperts * numberIndex * (numberIndex + 1) - (1 / (numberIndex - 1)) * summTi);
         }
 
-        omega = (12 * summDiSqrt) / (pow(numberExperts, 2) * (pow(numberIndex, 3) - 1) - numberExperts * summTi);
-        actualValueHeeSquare = (12 * summDiSqrt) / (numberExperts * numberIndex * (numberIndex + 1) - (1 / (numberIndex - 1)) * summTi);
-    }
+        if (omega > 0 && (actualValueHeeSquare >= theoreticalValueHeeSquare ))
+        {
+            // Если мнения согласованы
+            QMessageBox::information(this, "Information", "In table " + QString::number(_tableNumber + 1)
+                                     + " expert opinions agreed.");
+            return  averageVector;
 
-    if (omega > 0 && (actualValueHeeSquare >= theoreticalValueHeeSquare ))
-    {
-        // Если мнения согласованы
-        QMessageBox::information(this, "Information", "In table " + QString::number(_tableNumber + 1)
-                                 + " expert opinions agreed.");
-        return  averageVector;
+        } else {
 
-    } else {
-
-        // Анализ мнений экспертов, когда они не согласованы
-        float averageSummVVector = 0.0;  // Среднее арифметическое коэффициентов изменчивости
-        QString stringWithPosition;      /* Строка с позициями, чтобы нормально вывести тут хранятся
+            // Анализ мнений экспертов, когда они не согласованы
+            float averageSummVVector = 0.0;  // Среднее арифметическое коэффициентов изменчивости
+            QString stringWithPosition;      /* Строка с позициями, чтобы нормально вывести тут хранятся
                                           * позиции элементов, которые оказались
                                           * больше среднего арифметического и их надо скорректировать
                                           */
 
-        stringWithPosition = "";
-        averageSummVVector = getVectorSumm(VVector);
-        averageSummVVector /= numberIndex;
+            stringWithPosition = "";
+            averageSummVVector = getVectorSumm(VVector);
+            averageSummVVector /= numberIndex;
 
-        for (qint32 i = 0; i < VVector.size(); i++)  // Находим показатели, которые надо скорректировать
-        {
-            if (VVector.at(i) >= averageSummVVector) stringWithPosition += QString::number(i + 1) + " ";
+            for (qint32 i = 0; i < VVector.size(); i++)  // Находим показатели, которые надо скорректировать
+            {
+                if (VVector.at(i) >= averageSummVVector) stringWithPosition += QString::number(i + 1) + " ";
+            }
+
+            QMessageBox::warning(this, "Error", "Expert opinions are not agreed. \n Please check index " + stringWithPosition
+                                 + "\n in table " + QString::number(_tableNumber + 1));
+            VVector.push_back(-42);  // Флаг, показывающий, что мнения не согласованы и дальнейшие расчеты не имеют смысла
+            return averageVector;
         }
-
-        QMessageBox::warning(this, "Error", "Expert opinions are not agreed. \n Please check index " + stringWithPosition
-                             + "\n in table " + QString::number(_tableNumber + 1));
-        VVector.push_back(-42);  // Флаг, показывающий, что мнения не согласованы и дальнейшие расчеты не имеют смысла
-        return averageVector;
     }
 }
 
-float MethodsHAWC::getHeeSquareTableValue(int _numberIndex, int _nu)
+float MethodsHAWC::getHeeSquareTableValue(qint32 _numberIndex, float _nu)
 {
     // Таблица значений Хи^2
     float heeSquareTableMatrixNew [30][13]  = {
@@ -509,10 +515,10 @@ QString MethodsHAWC::assessProspects(float _ktu)
 {
     QString prospectsResult;
 
-    if (_ktu < 1.065 )                 return prospectsResult = "Not promising";
-    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unpromising";
-    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Promising";
-    if (_ktu > 1.27  )                 return prospectsResult = "Very promising";
+    if (_ktu < 1.065 )                 return prospectsResult = "Not perspective";
+    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unperspective";
+    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Perspective";
+    if (_ktu > 1.27  )                 return prospectsResult = "Very perspective";
 }
 
 /// ---------------------  ФУНКЦИИ ДЛЯ МАИ  ---------------------
@@ -522,7 +528,7 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
     QVector<float> integralPrioritets;         // Хранит локальные приоритеты по интегральным показателям
     QVector<QVector<float>> unitsPrioritets;   // Хранит локальные приоритеты по единичным показателям
     QVector<QVector<float>*> valuesPrioritets; // Хранит локальные приоритеты по числовым характеристикам
-    QPair<qint32, float> finalPrioritets;      // Хранит итоговые приоритеты с соответсвующими индексами альтернатив
+    QVector<QPair<qint32, float>> finalPrioritets;      // Хранит итоговые приоритеты с соответсвующими индексами альтернатив
 
     for (qint32 _table = 0; _table < vectorWithVectorExperts.size(); _table++)
     {
@@ -560,7 +566,7 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
         for (qint32 _row = 0; _row < vectorWithVectorValue.at(_table).size(); _row++)
         {
             QVector<float> currentLocalPrioritets;  // Вектор для тукущих локальных приоритетов по каждому ЕП
-            currentLocalPrioritets =  calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorValue.at(_table).at(_row)), 1, 0, _table);
+            currentLocalPrioritets =  calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorValue.at(_table).at(_row)), 0, 0, _table);
 
             // Запись в вектор с числовыми параметрами вычисленных
             // локальных приоритетов из вектора по строкам матрицы
@@ -572,6 +578,52 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
 
             currentLocalPrioritets.clear();
         }
+    }
+
+    QVector<float> multIntegralUnitsPrioritets;  // Хранит перемноженные ЕП на соответствующие ИП
+
+    multIntegralUnitsPrioritets.clear();
+
+    for (qint32 _currentIntegralPrioritets = 0; _currentIntegralPrioritets < integralPrioritets.size(); _currentIntegralPrioritets++)
+    {
+        for (qint32 _currentUnitsPrioritets = 0; _currentUnitsPrioritets < unitsPrioritets.at(_currentIntegralPrioritets).size(); _currentUnitsPrioritets++)
+        {
+            multIntegralUnitsPrioritets.push_back(integralPrioritets.at(_currentIntegralPrioritets) *
+                                                  unitsPrioritets.at(_currentIntegralPrioritets).at(_currentUnitsPrioritets));
+        }
+    }
+
+    float currentClobalPrioritets = 0;
+
+    for (qint32 _currValuePrioritetsVec = 0; _currValuePrioritetsVec < valuesPrioritets.size(); _currValuePrioritetsVec++)
+    {
+        currentClobalPrioritets = 0.0;
+
+        for (qint32 _currValuePrioritets = 0; _currValuePrioritets < valuesPrioritets.at(_currValuePrioritetsVec)->size(); _currValuePrioritets++)
+        {
+            currentClobalPrioritets += valuesPrioritets.at(_currValuePrioritetsVec)->at(_currValuePrioritets) *
+                    multIntegralUnitsPrioritets.at(_currValuePrioritets);
+        }
+
+        QPair<qint32, float> currentAlternative;
+        currentAlternative.first = _currValuePrioritetsVec;
+        currentAlternative.second = currentClobalPrioritets;
+        finalPrioritets.push_back(currentAlternative);
+    }
+
+    ui->finalPrioritetsTableWidget->setRowCount(NumberAlternative);
+    ui->finalPrioritetsTableWidget->setColumnCount(2);
+    ui->finalPrioritetsTableWidget->setHorizontalHeaderLabels(QStringList() << "#" << "Global prioritets");
+
+    for (qint32 _row = 0; _row < finalPrioritets.size(); _row++)
+    {
+        QTableWidgetItem *numberAlternative = new QTableWidgetItem(QString::number(finalPrioritets.at(_row).first + 1));
+        ui->finalPrioritetsTableWidget->setItem(_row, 0, numberAlternative);
+        ui->finalPrioritetsTableWidget->setColumnWidth(0, 60);
+
+        QTableWidgetItem *valueGlobalPrioritets = new QTableWidgetItem(QString::number(finalPrioritets.at(_row).second));
+        ui->finalPrioritetsTableWidget->setItem(_row, 1, valueGlobalPrioritets);
+        ui->finalPrioritetsTableWidget->setColumnWidth(1, 120);
     }
 
     qDebug() << "intgralPrioritets = " << integralPrioritets;
@@ -685,16 +737,6 @@ QVector<float> MethodsHAWC::calculationLocalPrioritets(QVector<QVector<float> > 
         localPrioritetsVector.push_back(arithmeticMeanLocalPrioritets);
     }
 
-    qDebug() << "artworkVector = " << artworkVector;          // Вектор произведений по строкам МПС (матрица парных сранвнений)
-    qDebug() << "rootsVector = " << rootsVector;            // Вектор корней из произведений МПС
-    qDebug() << "localPrioritetsVector = " << localPrioritetsVector;  // Вектор найденных локальных приоритетов
-    qDebug() << "lambdasVector = " << lambdasVector;          // Вектор лямбд для определения соглсованности
-    qDebug() << "summColumnsVector = " << summColumnsVector;      // Вектор сумм по стобцам
-    qDebug() << "relativeConsistency = " << relativeConsistency;
-    qDebug() << "indexConsistency = " << indexConsistency;
-    qDebug() << "randomConsistency = " << randomConsistency;
-    qDebug() << "lambdaMax = " << lambdaMax;
-
     return localPrioritetsVector;
 }
 
@@ -792,53 +834,59 @@ void MethodsHAWC::slotGetNumberUnitsIndex()
 
 void MethodsHAWC::on_CreateTablesPushButton_clicked()
 {
-    NumberExperts = ui->NumberExpertsLineEdit->text().toInt();
-    NumberAlternative = ui->NumberAlternativeLineEdit->text().toInt();
-
-    tableWidgetValueVector.clear();
-    tableWidgetExpertVector.clear();
-
-    if (ui->HAMRadioButton->isChecked())
+    if (ui->NumberIntegralIndexLineEdit->text() == "" |
+            ui->NumberAlternativeLineEdit->text()   == "" |
+            ui->NumberExpertsLineEdit->text()       == "" )
     {
-        // Создаение таблицы для мнений экспертов по ИП
-        QTableWidget *integralIndexTableWidgetExperts = new QTableWidget();
-        integralIndexTableWidgetExperts->setRowCount(NumberIntegralIndex);
-        integralIndexTableWidgetExperts->setColumnCount(NumberExperts);
-        resizeColumnWidth(integralIndexTableWidgetExperts);
-        ui->ExpertsVerticalLayout->addWidget(integralIndexTableWidgetExperts);
-        tableWidgetExpertVector.push_back(integralIndexTableWidgetExperts);
+        QMessageBox::warning(this, "Error", "Not all values entered");
     }
-
-    for (qint32 i = 0; i < NumberIntegralIndex; i++)
+    else
     {
-        // Создание таблиц числовых значений
-        QTableWidget *tableWidgetValue = new QTableWidget();
-        tableWidgetValue->setRowCount(NumberUnitsIndexVector.at(i));
+        NumberExperts = ui->NumberExpertsLineEdit->text().toInt();
+        NumberAlternative = ui->NumberAlternativeLineEdit->text().toInt();
 
-        // Для МВК +1 столбец нужен для записи направления роста ТУ (1 - повышение, -1 - понижение)
-        if (ui->WCMRadioButton->isChecked())
+        tableWidgetValueVector.clear();
+        tableWidgetExpertVector.clear();
+
+        if (ui->HAMRadioButton->isChecked())
         {
-            tableWidgetValue->setColumnCount(NumberAlternative + 1);
-        } else {
-            tableWidgetValue->setColumnCount(NumberAlternative);
+            // Создаение таблицы для мнений экспертов по ИП
+            QTableWidget *integralIndexTableWidgetExperts = new QTableWidget();
+            integralIndexTableWidgetExperts->setRowCount(NumberIntegralIndex);
+            integralIndexTableWidgetExperts->setColumnCount(NumberExperts);
+            resizeColumnWidth(integralIndexTableWidgetExperts);
+            ui->ExpertsVerticalLayout->addWidget(integralIndexTableWidgetExperts);
+            tableWidgetExpertVector.push_back(integralIndexTableWidgetExperts);
         }
-        resizeColumnWidth(tableWidgetValue);
-        //tableWidgetValue->resize(100, 100);
-        ui->layout->addWidget(tableWidgetValue);
-        tableWidgetValueVector.push_back(tableWidgetValue);
 
-        // Создание таблиц для оценок экспертов
-        QTableWidget *tableWidgetExperts = new QTableWidget();
-        tableWidgetExperts->setRowCount(NumberUnitsIndexVector.at(i));
-        tableWidgetExperts->setColumnCount(NumberExperts);
-        resizeColumnWidth(tableWidgetExperts);
-        //tableWidgetExperts->resize(100, 100);
-        ui->ExpertsVerticalLayout->addWidget(tableWidgetExperts);
-        tableWidgetExpertVector.push_back(tableWidgetExperts);
+        for (qint32 i = 0; i < NumberIntegralIndex; i++)
+        {
+            // Создание таблиц числовых значений
+            QTableWidget *tableWidgetValue = new QTableWidget();
+            tableWidgetValue->setRowCount(NumberUnitsIndexVector.at(i));
+
+            // Для МВК +1 столбец нужен для записи направления роста ТУ (1 - повышение, -1 - понижение)
+            if (ui->WCMRadioButton->isChecked())
+            {
+                tableWidgetValue->setColumnCount(NumberAlternative + 1);
+            } else {
+                tableWidgetValue->setColumnCount(NumberAlternative);
+            }
+            resizeColumnWidth(tableWidgetValue);
+            //tableWidgetValue->resize(100, 100);
+            ui->ValuesVerticalLayout->addWidget(tableWidgetValue);
+            tableWidgetValueVector.push_back(tableWidgetValue);
+
+            // Создание таблиц для оценок экспертов
+            QTableWidget *tableWidgetExperts = new QTableWidget();
+            tableWidgetExperts->setRowCount(NumberUnitsIndexVector.at(i));
+            tableWidgetExperts->setColumnCount(NumberExperts);
+            resizeColumnWidth(tableWidgetExperts);
+            //tableWidgetExperts->resize(100, 100);
+            ui->ExpertsVerticalLayout->addWidget(tableWidgetExperts);
+            tableWidgetExpertVector.push_back(tableWidgetExperts);
+        }
     }
-
-    //    qDebug() << tableWidgetValueVector;
-    //    qDebug() << tableWidgetExpertVector;
 }
 
 QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_tableWidget)
@@ -858,7 +906,7 @@ QVector<QVector<float>> MethodsHAWC::getQVectorFromQTableWidget(QTableWidget *_t
             if (_tableWidget->item(i, j)->text() == "")
             {
                 QMessageBox::warning(this, "Error", "Not all values entered in tables. \n Check tables.");
-                break;
+                vectorRows.push_back(-42);
             } else {
                 vectorRows.push_back(_tableWidget->item(i, j)->text().toFloat());
             }
@@ -878,7 +926,7 @@ void MethodsHAWC::resizeColumnWidth(QTableWidget *_tableWidget)
     }
 }
 
-void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)
+void MethodsHAWC::saveAsCSV(QString filename, QTableWidget* _tableWidget)
 {
     QFile tableFile(filename);
 
@@ -888,17 +936,17 @@ void MethodsHAWC::saveAsCSV(QString filename, QTableWidget _tableWidget)
         QStringList strList;
 
         strList << "\" \"";
-        for( int c = 0; c < _tableWidget.horizontalHeader()->count(); ++c )
-            strList << "\"" + _tableWidget.model()->headerData(c, Qt::Horizontal).toString()+"\"";
+        for( int c = 0; c < _tableWidget->horizontalHeader()->count(); ++c )
+            strList << "\"" + _tableWidget->model()->headerData(c, Qt::Horizontal).toString()+"\"";
         ts << strList.join( ";" )+"\n";
 
-        for( int r = 0; r < _tableWidget.verticalHeader()->count(); ++r )
+        for( int r = 0; r < _tableWidget->verticalHeader()->count(); ++r )
         {
             strList.clear();
-            strList << "\"" + _tableWidget.model()->headerData(r, Qt::Vertical).toString()+"\"";
-            for( int c = 0; c < _tableWidget.horizontalHeader()->count(); ++c )
+            strList << "\"" + _tableWidget->model()->headerData(r, Qt::Vertical).toString()+"\"";
+            for( int c = 0; c < _tableWidget->horizontalHeader()->count(); ++c )
             {
-                strList << "\"" + _tableWidget.model()->data(_tableWidget.model()->index(r, c), Qt::DisplayRole).toString()+"\"";
+                strList << "\"" + _tableWidget->model()->data(_tableWidget->model()->index(r, c), Qt::DisplayRole).toString()+"\"";
             }
             ts << strList.join( ";" )+"\n";
         }
@@ -951,15 +999,7 @@ bool MethodsHAWC::equalFloatingValue(float _value1, float _value2, float _epsilo
     }
 }
 
-void MethodsHAWC::on_TEST_BTN_clicked()
+void MethodsHAWC::on_SavePushButton_clicked()
 {
-    QVector<QVector<float>> testVector;
-    QVector<float> testAverageVector;
-
-    testVector = getQVectorFromQTableWidget(ui->tableWidget);
-
-    qDebug() << testVector;
-    testAverageVector =  checkOpinionAndGetAverageVector(testVector, 3, 2);
+    saveAsCSV("PriorityTable", ui->finalPrioritetsTableWidget);
 }
-
-

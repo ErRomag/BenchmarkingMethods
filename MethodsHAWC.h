@@ -18,8 +18,8 @@ public:
     explicit MethodsHAWC(QWidget *parent = nullptr);
     ~MethodsHAWC();
 
-    // Сохранение в .SCV формат
-    void saveAsCSV(QString filename, QTableWidget _tableWidget);
+    // Сохранение в .SCV формат, функция взята тут http://blog.harrix.org/article/1700
+    void saveAsCSV(QString filename, QTableWidget *_tableWidget);
 
     // Получение вектора с данными из таблицы
     QVector<QVector<float>> getQVectorFromQTableWidget(QTableWidget *_tableWidget);
@@ -44,10 +44,10 @@ public:
     void calculationUsingWeightCoefficientMethod();
 
     // Вектор средних арифметических для МВК
-    QVector<float> checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, qint32 _columnNumber, qint32 _tableNumber);
+    QVector<float> checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, float _heeSquareCoefficient, qint32 _tableNumber);
 
     // Получение значения Хи^2, где n - кол-во показателей, p - номер столбца, соответсвующий (1 - mu)
-    float getHeeSquareTableValue(int _numberIndex, int _nu);
+    float getHeeSquareTableValue(qint32 _numberIndex, float _nu);
 
     // Функция оценки перспективности образца СТС
     QString assessProspects(float _ktu);
@@ -77,8 +77,7 @@ private slots:
     void on_CreateTablesPushButton_clicked();       // Создает необходимое количество таблиц
     void on_CreateSingleIndexPushButton_clicked();  // Создает необходимое количество LineEdit для каждого ИП
     void on_CalculationPushButton_clicked();        // Производит все вычисления
-
-    void on_TEST_BTN_clicked();
+    void on_SavePushButton_clicked();               // Сохранить полученную таблицу приоритетов
 
 private:
     Ui::MethodsHAWC *ui;
