@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="title">
-     <string>Исходные данные</string>
+     <string>Initial data</string>
     </property>
     <widget class="QGroupBox" name="groupBox_2">
      <property name="geometry">
@@ -36,7 +36,7 @@
       </rect>
      </property>
      <property name="title">
-      <string>Единичные показатели</string>
+      <string>Units index</string>
      </property>
      <widget class="QWidget" name="verticalLayoutWidget">
       <property name="geometry">
@@ -66,7 +66,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Кол-во экспертов</string>
+         <string>Number experts</string>
         </property>
        </widget>
       </item>
@@ -76,21 +76,21 @@
       <item row="4" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Число μ для χ^2</string>
+         <string>Value μ for χ^2</string>
         </property>
        </widget>
       </item>
       <item row="2" column="0" colspan="2">
        <widget class="QRadioButton" name="HAMRadioButton">
         <property name="text">
-         <string>МАИ</string>
+         <string>HAM</string>
         </property>
        </widget>
       </item>
       <item row="5" column="0" colspan="2">
        <widget class="QPushButton" name="CreateTablesPushButton">
         <property name="text">
-         <string>Создать таблицы</string>
+         <string>Create table</string>
         </property>
        </widget>
       </item>
@@ -100,28 +100,28 @@
       <item row="6" column="0" colspan="2">
        <widget class="QPushButton" name="CalculationPushButton">
         <property name="text">
-         <string>Провести расчет</string>
+         <string>Calculation</string>
         </property>
        </widget>
       </item>
       <item row="7" column="0" colspan="2">
        <widget class="QPushButton" name="SavePushButton">
         <property name="text">
-         <string>Сохранить</string>
+         <string>Save priority table</string>
         </property>
        </widget>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Кол-во альтеранатив</string>
+         <string>Number alternative</string>
         </property>
        </widget>
       </item>
       <item row="3" column="0" colspan="2">
        <widget class="QRadioButton" name="WCMRadioButton">
         <property name="text">
-         <string>МВК</string>
+         <string>WCM</string>
         </property>
        </widget>
       </item>
@@ -140,7 +140,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Количество ИП</string>
+         <string>Number integral index</string>
         </property>
        </widget>
       </item>
@@ -154,7 +154,7 @@
       <item row="1" column="0" colspan="2">
        <widget class="QPushButton" name="CreateSingleIndexPushButton">
         <property name="text">
-         <string>Отобразить</string>
+         <string>Create</string>
         </property>
        </widget>
       </item>
@@ -171,7 +171,7 @@
      </rect>
     </property>
     <property name="title">
-     <string>Таблицы с числовыми харакетристиками</string>
+     <string>Numeric tables</string>
     </property>
     <widget class="QWidget" name="verticalLayoutWidget_2">
      <property name="geometry">
@@ -195,7 +195,7 @@
      </rect>
     </property>
     <property name="title">
-     <string>Таблицы с оценками экспертов</string>
+     <string>Experts score tables</string>
     </property>
     <widget class="QWidget" name="verticalLayoutWidget_3">
      <property name="geometry">
@@ -215,11 +215,11 @@
       <x>1040</x>
       <y>20</y>
       <width>261</width>
-      <height>411</height>
+      <height>401</height>
      </rect>
     </property>
     <property name="title">
-     <string>Итоговые приоритеты</string>
+     <string>Priority table</string>
     </property>
     <widget class="QTableWidget" name="finalPrioritetsTableWidget">
      <property name="geometry">

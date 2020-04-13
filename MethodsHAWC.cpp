@@ -20,7 +20,7 @@ MethodsHAWC::MethodsHAWC(QWidget *parent) :
     setWindowIcon(HAMWindowIcon);
 
     // MenuBar
-    openMainWindowAction = new QAction("&Choose method", this);
+    openMainWindowAction = new QAction("&Main menu", this);
     connect(openMainWindowAction, SIGNAL(triggered()), this, SLOT(onOpenMainWindowClicked()));
     exitAction = new QAction("&Exit", this);
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
@@ -168,11 +168,11 @@ void MethodsHAWC::calculationUsingWeightCoefficientMethod()
 
     ui->finalPrioritetsTableWidget->setRowCount(NumberAlternative - 1);
     ui->finalPrioritetsTableWidget->setColumnCount(3);
-    ui->finalPrioritetsTableWidget->setHorizontalHeaderLabels(QStringList() << "#" << "Ktu" << "Prospective");
+    ui->finalPrioritetsTableWidget->setHorizontalHeaderLabels(QStringList() << "#" << "Ktu" << "Promising");
 
     for (qint32 _row = 0; _row < vectorWithKtuAnalyz.size(); _row++)
     {
-        QTableWidgetItem *numberKtu = new QTableWidgetItem(QString::number(_row + 3));
+        QTableWidgetItem *numberKtu = new QTableWidgetItem(QString::number(_row + 1));
         ui->finalPrioritetsTableWidget->setItem(_row, 0, numberKtu);
         ui->finalPrioritetsTableWidget->setColumnWidth(0, 30);
 
@@ -184,9 +184,6 @@ void MethodsHAWC::calculationUsingWeightCoefficientMethod()
         ui->finalPrioritetsTableWidget->setItem(_row, 2, assessKtu);
         ui->finalPrioritetsTableWidget->setColumnWidth(2, 120);
     }
-
-    qDebug() << "vectorWithKtuAnalyz = " << vectorWithKtuAnalyz;
-    qDebug() << "maxNumberInKtuVector = " << maxNumberInKtuVector;
 }
 
 QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<float>> _vectorFromTableWidget, float _heeSquareCoefficient, qint32 _tableNumber)
@@ -214,7 +211,7 @@ QVector<float> MethodsHAWC::checkOpinionAndGetAverageVector(QVector<QVector<floa
      */
     if (numberIndex == 0 | numberExperts == 0)
     {
-        QMessageBox::warning(this, "Warning!", "Количество экспертов или показателей равно 0!");
+        QMessageBox::warning(this, "Warning!", "The number of experts or inex is 0!");
     } else {
 
         // Вычисление средного арифметического оценок экспертов для каждого показателя
@@ -515,10 +512,11 @@ QString MethodsHAWC::assessProspects(float _ktu)
 {
     QString prospectsResult;
 
-    if (_ktu < 1.065 )                 return prospectsResult = "Not perspective";
-    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unperspective";
-    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Perspective";
-    if (_ktu > 1.27  )                 return prospectsResult = "Very perspective";
+    if (_ktu < 1.065 )                 return prospectsResult = "Not promising";
+    if (_ktu > 1.065  && _ktu < 1.13 ) return prospectsResult = "Unpromising";
+    if (_ktu > 1.13   && _ktu < 1.27 ) return prospectsResult = "Promising";
+    if (_ktu > 1.27  )                 return prospectsResult = "Very promising"
+                                                                "";
 }
 
 /// ---------------------  ФУНКЦИИ ДЛЯ МАИ  ---------------------
@@ -540,7 +538,6 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
             } else {
                 integralPrioritets = calculationLocalPrioritets(getMatrixPairedComparsion(vectorWithVectorExperts.at(_table)), 1, 0, _table);
             }
-            qDebug() << "integralPrioritets = " << integralPrioritets;
         }
         else
         {
@@ -599,6 +596,7 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
     {
         currentClobalPrioritets = 0.0;
 
+
         for (qint32 _currValuePrioritets = 0; _currValuePrioritets < valuesPrioritets.at(_currValuePrioritetsVec)->size(); _currValuePrioritets++)
         {
             currentClobalPrioritets += valuesPrioritets.at(_currValuePrioritetsVec)->at(_currValuePrioritets) *
@@ -625,10 +623,6 @@ void MethodsHAWC::calculationUsingHierarchyAnalysisMethod()
         ui->finalPrioritetsTableWidget->setItem(_row, 1, valueGlobalPrioritets);
         ui->finalPrioritetsTableWidget->setColumnWidth(1, 120);
     }
-
-    qDebug() << "intgralPrioritets = " << integralPrioritets;
-    qDebug() << "unitsProiritets = " << unitsPrioritets;
-
 }
 
 QVector<float> MethodsHAWC::calculationLocalPrioritets(QVector<QVector<float> > _pairedComparsionMatrix,
@@ -864,11 +858,19 @@ void MethodsHAWC::on_CreateTablesPushButton_clicked()
             // Создание таблиц числовых значений
             QTableWidget *tableWidgetValue = new QTableWidget();
             tableWidgetValue->setRowCount(NumberUnitsIndexVector.at(i));
+            QStringList columnNumbering;
 
             // Для МВК +1 столбец нужен для записи направления роста ТУ (1 - повышение, -1 - понижение)
             if (ui->WCMRadioButton->isChecked())
             {
+                columnNumbering << "State TL" << "Basic"; // State technical level (TL)
+                for(int i = 0; i < NumberAlternative - 1; i++)
+                {
+                    columnNumbering << QString::number(i + 1);
+                }
                 tableWidgetValue->setColumnCount(NumberAlternative + 1);
+                tableWidgetValue->setHorizontalHeaderLabels(columnNumbering);
+
             } else {
                 tableWidgetValue->setColumnCount(NumberAlternative);
             }
